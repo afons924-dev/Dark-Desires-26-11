@@ -472,7 +472,7 @@ exports.aliexpressAuthCallback = onRequest(
 
 
 /**
- * ✅ ÚLTIMA TENTATIVA: Colocar método no PATH em vez de nos parâmetros
+ * Fetches product data from AliExpress API.
  */
 exports.importAliExpressProduct = onCall(
   { region: "europe-west3", secrets: ["ALIEXPRESS_APP_KEY", "ALIEXPRESS_APP_SECRET"] },
@@ -555,81 +555,62 @@ exports.importAliExpressProduct = onCall(
 
     try {
       const timestamp = Date.now().toString();
-      
-      // ✅ NÃO incluir 'method' na assinatura - colocar no PATH
-      const signParams = {
+      const apiMethodName = "aliexpress.ds.product.get";
+
+
+      const paramsToSign = {
+        access_token: accessToken,
         app_key: APP_KEY,
-        timestamp: timestamp,
-        sign_method: "sha256",
-        v: "2.0",
         format: "json",
+        method: apiMethodName,
         product_id: productId,
+        ship_to_country: "PT",
+        sign_method: "sha256",
         target_currency: "EUR",
         target_language: "en",
-        ship_to_country: "PT",
+        timestamp: timestamp,
+        v: "2.0",
       };
 
 
-      // Generate signature WITHOUT method parameter
-      const sortedKeys = Object.keys(signParams).sort();
+      const sortedKeys = Object.keys(paramsToSign).sort();
       let signString = "";
       sortedKeys.forEach((key) => {
-        signString += key + signParams[key];
+        signString += key + paramsToSign[key];
       });
 
 
       const sign = crypto.createHmac("sha256", APP_SECRET).update(signString).digest("hex").toUpperCase();
 
 
-      // Final parameters WITHOUT method (will be in URL path)
-      const params = {
-        ...signParams,
-        access_token: accessToken,
-        sign: sign
+      const finalParams = {
+        ...paramsToSign,
+        sign: sign,
       };
-      
-      const postData = querystring.stringify(params);
-      
-      logger.info("Making request WITHOUT method in params:", { ...params, access_token: "***" });
-      
-      // ✅ Incluir method no PATH, não nos parâmetros
-      const options = {
-        hostname: 'api-sg.aliexpress.com',
-        port: 443,
-        path: '/rest/aliexpress.ds.product.get',  // ← METHOD NO PATH
-        method: 'POST',
+
+
+      const postData = querystring.stringify(finalParams);
+
+
+      logger.info("Making request with correct params:", { ...finalParams, access_token: "***" });
+
+
+      const response = await axios.post("https://api-sg.aliexpress.com/rest", postData, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': Buffer.byteLength(postData),
-          'User-Agent': 'Mozilla/5.0',
-          'Accept': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
-      };
-      
-      const responseData = await new Promise((resolve, reject) => {
-        const req = https.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => { data += chunk; });
-          res.on('end', () => {
-            try {
-              resolve(JSON.parse(data));
-            } catch (e) {
-              resolve(data);
-            }
-          });
-        });
-        
-        req.on('error', (e) => reject(e));
-        req.write(postData);
-        req.end();
       });
+
+
+      const responseData = response.data;
 
 
       logger.info("AliExpress API Response:", JSON.stringify(responseData));
 
 
       const result = responseData.aliexpress_ds_product_get_response?.result || responseData.result || responseData.data?.result;
-      
+
+
       if (!result) {
         logger.error("Error fetching product from AliExpress (Full Response):", JSON.stringify(responseData));
         throw new HttpsError("not-found", "Could not retrieve product details from AliExpress.");
