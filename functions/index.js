@@ -595,7 +595,7 @@ exports.importAliExpressProduct = onCall(
       logger.info("Making request with correct params:", { ...finalParams, access_token: "***" });
 
 
-      const response = await axios.post("https://api-sg.aliexpress.com/rest", postData, {
+      const response = await axios.post("https://api-sg.aliexpress.com/sync", postData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
