@@ -220,3 +220,26 @@ html[data-theme='light'] #shipping-message {
 #whatsapp-fab:hover {
     transform: scale(1.1);
 }
+
+/* Mobile Bottom Navigation Styles */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    }
+
+    #whatsapp-fab {
+        bottom: calc(80px + env(safe-area-inset-bottom));
+    }
+
+    #bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    }
+
+    /* Hide specific header elements on mobile if needed, though index.html classes handle most */
+}
+
+/* Safe area utility */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
