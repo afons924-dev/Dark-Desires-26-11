@@ -587,64 +587,64 @@ exports.importAliExpressProduct = onCall(
         access_token: accessToken,
         sign: sign
       };
-      
-      const postData = querystring.stringify(params);
-      
-      logger.info("Making request WITHOUT method in params:", { ...params, access_token: "***" });
-      
-      // ✅ Incluir method no PATH, não nos parâmetros
-      const options = {
-        hostname: 'api-sg.aliexpress.com',
-        port: 443,
-        path: '/rest/aliexpress.ds.product.get',  // ← METHOD NO PATH
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': Buffer.byteLength(postData),
-          'User-Agent': 'Mozilla/5.0',
-          'Accept': 'application/json'
-        }
-      };
-      
-      const responseData = await new Promise((resolve, reject) => {
-        const req = https.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => { data += chunk; });
-          res.on('end', () => {
-            try {
-              resolve(JSON.parse(data));
-            } catch (e) {
-              resolve(data);
-            }
-          });
-        });
-        
-        req.on('error', (e) => reject(e));
-        req.write(postData);
-        req.end();
-      });
+      const queryString = querystring.stringify(params);
+      const url = `https://api-sg.aliexpress.com/sync?${queryString}`;
+
+
+      logger.info("Making GET request to:", url.replace(accessToken, "***"));
+
+
+      const response = await axios.get(url);
+      const responseData = response.data;
 
 
       logger.info("AliExpress API Response:", JSON.stringify(responseData));
 
 
       const result = responseData.aliexpress_ds_product_get_response?.result || responseData.result || responseData.data?.result;
-      
+
+
       if (!result) {
         logger.error("Error fetching product from AliExpress (Full Response):", JSON.stringify(responseData));
         throw new HttpsError("not-found", "Could not retrieve product details from AliExpress.");
       }
 
+      // Check if product already exists
+      const existingProductQuery = await db.collection('products').where('aliexpressProductId', '==', productId).get();
+      if (!existingProductQuery.empty) {
+        throw new HttpsError("already-exists", "This product has already been imported.");
+      }
 
-      const productData = {
-        name: result.ae_item_base_info_dto?.subject || result.subject,
-        description: result.ae_item_base_info_dto?.detail || result.detail,
+      const baseInfo = result.ae_item_base_info_dto || {};
+      const skuInfo = result.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o || [];
+      const multimediaInfo = result.ae_multimedia_info_dto || {};
+
+      const totalStock = skuInfo.reduce((acc, sku) => acc + (sku.sku_available_stock || 0), 0);
+      const firstSku = skuInfo.length > 0 ? skuInfo[0] : {};
+
+      const newProduct = {
+        name: baseInfo.subject || "No name",
+        description: baseInfo.detail || "No description",
+        price: parseFloat(firstSku.offer_sale_price) || 0,
+        stock: totalStock,
+        images: multimediaInfo.image_urls ? multimediaInfo.image_urls.split(';') : [],
+        category: "Imported", // Default category
+        aliexpressProductId: productId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        sold: 0,
       };
 
+      const docRef = await db.collection('products').add(newProduct);
 
-      return { success: true, product: productData };
+      logger.info(`Successfully imported product ${productId} as new document ${docRef.id}`);
+
+      return { success: true, productId: docRef.id };
     } catch (error) {
       logger.error("Error fetching AliExpress product:", error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
       throw new HttpsError("unknown", "An error occurred while fetching product data.");
     }
   }
