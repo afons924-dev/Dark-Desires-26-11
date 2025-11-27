@@ -1521,17 +1521,15 @@ const app = {
 
                     if (product.error) throw new Error(product.error);
 
-                    // preencher formulário
-                    form.name.value = product.name || '';
-                    form.description.value = product.description || '';
-                    form.price.value = product.price || 0;
+                    // O produto já foi criado na base de dados pela Cloud Function.
+                    // Precisamos de limpar a cache e recarregar a lista.
+                    localStorage.removeItem('products_cache');
+                    await this.loadProducts();
+                    this.renderAdminProductList();
+                    this.applyFilters();
 
-                    this.adminImageFiles = [];
-                    this.adminExistingImages = product.images || [];
-                    this.renderAdminImageGallery();
-
-                    this.showToast('Produto importado com sucesso!');
-                    resultDiv.innerHTML = `<p class="text-green-400">Produto <strong>${product.name}</strong> carregado.</p>`;
+                    this.showToast('Produto importado e salvo com sucesso!');
+                    resultDiv.innerHTML = `<p class="text-green-400">Produto importado com sucesso (ID: ${product.productId}).</p>`;
 
                 } catch (error) {
                     console.error(error);
