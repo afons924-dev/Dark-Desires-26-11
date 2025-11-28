@@ -45,18 +45,18 @@
 </div>
 </div>
 </div>
-<div class="flex justify-between items-center mb-6 bg-secondary p-4 rounded-lg">
+<div class="flex flex-col sm:flex-row justify-between items-center mb-6 bg-secondary p-4 rounded-lg gap-4">
 <p aria-live="polite" class="text-gray-400" id="product-count"></p>
-<div class="flex items-center gap-2">
-<label class="text-gray-400" for="sort" data-i18n="sortBy">Ordenar por:</label>
-<select class="bg-gray-700 text-white rounded-md px-3 py-2 form-select focus:outline-none focus:ring-2 focus:ring-accent" id="sort">
+<div class="flex items-center gap-2 w-full sm:w-auto">
+<label class="text-gray-400 whitespace-nowrap" for="sort" data-i18n="sortBy">Ordenar por:</label>
+<select class="bg-gray-700 text-white rounded-md px-3 py-2 form-select focus:outline-none focus:ring-2 focus:ring-accent flex-grow sm:flex-grow-0" id="sort">
 <option value="popularity" data-i18n="sortPopularity">Popularidade</option>
 <option value="price-asc" data-i18n="sortPriceAsc">Preço: Baixo para Alto</option>
 <option value="price-desc" data-i18n="sortPriceDesc">Preço: Alto para Baixo</option>
 </select>
 </div>
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8" id="product-grid"></div>
+<div class="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8" id="product-grid"></div>
 <div id="pagination-controls" class="flex justify-center items-center mt-12 space-x-2"></div>
 </section>
 </div>
