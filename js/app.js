@@ -751,9 +751,11 @@ const app = {
 
     initProductsPage(params) {
         const searchTerm = params.get('q');
+        const searchInput = document.getElementById('search-input');
         if (searchTerm) {
-            const searchInput = document.getElementById('search-input');
             if (searchInput) searchInput.value = searchTerm;
+        } else {
+            if (searchInput) searchInput.value = '';
         }
         const sort = params.get('sort');
         if (sort) {
@@ -3843,12 +3845,12 @@ const app = {
             const status = order.status || 'Pendente';
             return `
             <div class="bg-secondary rounded-lg overflow-hidden">
-                <button class="accordion-header w-full flex justify-between items-center p-4 text-left gap-4">
-                    <span class="font-bold text-white text-sm">#${order.id.substring(0, 8).toUpperCase()}</span>
-                    <span class="text-gray-400 hidden sm:inline">${orderDate}</span>
-                    <span class="font-semibold text-white flex-1 text-right">€${order.total.toFixed(2)}</span>
-                    <span class="py-1 px-3 rounded-full text-xs font-bold whitespace-nowrap ${this.getStatusColor(status)}">${status}</span>
-                    <i class="fas fa-chevron-down text-gray-400"></i>
+                <button class="accordion-header w-full flex flex-wrap justify-between items-center p-4 text-left gap-2 sm:gap-4">
+                    <span class="font-bold text-white text-xs">#${order.id.substring(0, 8).toUpperCase()}</span>
+                    <span class="text-gray-400 text-xs hidden sm:inline">${orderDate}</span>
+                    <span class="font-semibold text-white flex-1 text-right text-sm">€${order.total.toFixed(2)}</span>
+                    <span class="py-1 px-2 rounded-full text-[10px] font-bold whitespace-nowrap ${this.getStatusColor(status)}">${status}</span>
+                    <i class="fas fa-chevron-down text-gray-400 ml-2"></i>
                 </button>
                 <div class="accordion-body border-t border-gray-700">
                    <div class="p-4">
