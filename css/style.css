@@ -224,7 +224,7 @@ html[data-theme='light'] #shipping-message {
 /* Mobile Bottom Navigation Styles */
 @media (max-width: 768px) {
     body {
-        padding-bottom: calc(70px + env(safe-area-inset-bottom));
+        padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* Increased padding to prevent overlap */
     }
 
     #whatsapp-fab {

@@ -520,7 +520,7 @@ const app = {
         const url = window.location.hash.substring(1) || '/';
         const [path, query] = url.split('?');
 
-        const protectedRoutes = ['/account', '/checkout'];
+        const protectedRoutes = ['/account']; // Removed '/checkout' to allow Guest Checkout
         const adminRoutes = ['/admin', '/admin-orders', '/admin-reviews'];
 
         if (protectedRoutes.includes(path) && !this.user) {
@@ -2485,10 +2485,19 @@ const app = {
         const bottomNavAccountLink = document.querySelector('#bottom-nav a[data-route="/account"]');
         if (bottomNavAccountLink) {
             if (!isLoggedIn) {
-                bottomNavAccountLink.addEventListener('click', (e) => {
+                // If not logged in, clicking the bottom nav "Account" link should open the login modal
+                // instead of navigating to the protected account page.
+                // We clone the node to remove existing listeners to prevent accumulation
+                const newLink = bottomNavAccountLink.cloneNode(true);
+                bottomNavAccountLink.parentNode.replaceChild(newLink, bottomNavAccountLink);
+                newLink.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.openAuthModal('login');
-                }, { once: true }); // Use once to avoid multiple listeners
+                });
+            } else {
+                 // Reset to default navigation behavior if logged in (remove interceptor)
+                 const newLink = bottomNavAccountLink.cloneNode(true);
+                 bottomNavAccountLink.parentNode.replaceChild(newLink, bottomNavAccountLink);
             }
         }
     },
@@ -3154,7 +3163,9 @@ const app = {
             const content = document.getElementById('preview-content');
             const imageUrl = (product.images && product.images[0]) || product.image;
             content.classList.add('grid', 'md:grid-cols-2', 'gap-6');
-            content.innerHTML = `<h2 id="preview-heading" class="sr-only">Vista Rápida: ${product.name}</h2><button id="close-preview" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10"><i class="fas fa-times text-2xl"></i></button><div><img src="${imageUrl}" alt="${product.name}" class="w-full h-auto object-cover rounded-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x600/1a1a1a/e11d48?text=Indisponível';" loading="lazy"></div><div class="flex flex-col"><h3 class="text-3xl font-extrabold text-white mb-3">${product.name}</h3><p class="text-gray-300 text-lg mb-6">${product.description}</p><div class="mt-auto"><span class="text-4xl font-bold text-accent mb-6 block">€${product.price.toFixed(2)}</span><button data-id="${product.id}" class="add-to-cart-btn w-full btn btn-primary flex items-center justify-center gap-2 text-center"><i class="fas fa-shopping-cart"></i> Adicionar ao Carrinho</button></div></div>`;
+            // Sanitize description
+            const cleanDescription = DOMPurify.sanitize(product.description);
+            content.innerHTML = `<h2 id="preview-heading" class="sr-only">Vista Rápida: ${product.name}</h2><button id="close-preview" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10"><i class="fas fa-times text-2xl"></i></button><div><img src="${imageUrl}" alt="${product.name}" class="w-full h-auto object-cover rounded-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x600/1a1a1a/e11d48?text=Indisponível';" loading="lazy"></div><div class="flex flex-col"><h3 class="text-3xl font-extrabold text-white mb-3">${product.name}</h3><div class="text-gray-300 text-lg mb-6 prose prose-invert">${cleanDescription}</div><div class="mt-auto"><span class="text-4xl font-bold text-accent mb-6 block">€${product.price.toFixed(2)}</span><button data-id="${product.id}" class="add-to-cart-btn w-full btn btn-primary flex items-center justify-center gap-2 text-center"><i class="fas fa-shopping-cart"></i> Adicionar ao Carrinho</button></div></div>`;
             modal.classList.replace('hidden', 'flex');
             document.getElementById('close-preview').addEventListener('click', () => this.closePreviewModal());
             modal.addEventListener('click', (e) => { if (e.target.id === 'preview-modal') this.closePreviewModal(); });
@@ -4125,8 +4136,25 @@ const app = {
 
     saveShippingInfo() {
         const form = document.getElementById('checkout-form');
-        const profileUpdate = { firstName: form.elements.firstName.value, lastName: form.elements.lastName.value, address: { address: form.elements.address.value, city: form.elements.city.value, zip: form.elements.zip.value, } };
-        setDoc(doc(this.db, "users", this.user.uid), profileUpdate, { merge: true });
+        // If guest, we don't save to Firestore user profile.
+        // We could save to localStorage for convenience if they return.
+        if (this.user) {
+            const profileUpdate = { firstName: form.elements.firstName.value, lastName: form.elements.lastName.value, address: { address: form.elements.address.value, city: form.elements.city.value, zip: form.elements.zip.value, } };
+            setDoc(doc(this.db, "users", this.user.uid), profileUpdate, { merge: true });
+        } else {
+            // Optional: Save guest info to localStorage to repopulate if page reloads
+            const guestInfo = {
+                firstName: form.elements.firstName.value,
+                lastName: form.elements.lastName.value,
+                email: form.elements.email.value,
+                address: {
+                    address: form.elements.address.value,
+                    city: form.elements.city.value,
+                    zip: form.elements.zip.value
+                }
+            };
+            localStorage.setItem('guestCheckoutInfo', JSON.stringify(guestInfo));
+        }
     },
 
     updateReviewDetails() {
@@ -4152,7 +4180,7 @@ const app = {
                 cart: this.cart, // Send the full cart for server-side validation
                 loyaltyPoints: this.loyalty.pointsUsed,
                 discount: this.discount, // Send discount info for server-side validation
-                userId: this.user.uid
+                userId: this.user ? this.user.uid : null // Send null if guest
             };
             console.log("DEBUG: Calling 'createStripePaymentIntent' with payload:", JSON.stringify(payload, null, 2));
 
