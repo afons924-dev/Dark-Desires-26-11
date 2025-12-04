@@ -43,22 +43,18 @@ function safeJsonParse(str) {
 /**
  * Creates a Stripe Payment Intent.
  */
-exports.createStripePaymentIntent = onRequest(
-  { region: "europe-west3", secrets: ["STRIPE_SECRET_KEY"], cors: corsOptions },
-  async (req, res) => {
-    if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
-    }
-
+exports.createStripePaymentIntent = onCall(
+  { region: "europe-west3", secrets: ["STRIPE_SECRET_KEY"] },
+  async (request) => {
     if (!stripe) {
       stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     }
 
-    const { userId, cart } = req.body || {};
+    const { userId, cart } = request.data || {};
 
     // Allow userId to be null (Guest Checkout) but require cart
     if (!cart || !Array.isArray(cart) || cart.length === 0) {
-      return res.status(400).send({ error: "Missing or invalid parameters: cart is required." });
+      throw new HttpsError("invalid-argument", "Missing or invalid parameters: cart is required.");
     }
 
     try {
@@ -75,14 +71,14 @@ exports.createStripePaymentIntent = onRequest(
       const amountInCents = Math.round(amount * 100);
 
       if (amountInCents < 50) {
-        return res.status(400).send({
-          error: `Amount is too small. Minimum charge is €0.50. Amount calculated: €${amount.toFixed(2)}`,
-        });
+        throw new HttpsError(
+          "failed-precondition",
+          `Amount is too small. Minimum charge is €0.50. Amount calculated: €${amount.toFixed(2)}`
+        );
       }
 
-      // Metadata for guest checkout: If no userId, maybe store email if provided in body (not implemented in req.body yet)
-      // For now, userId can be 'guest' or null.
-      const metadata = userId ? { userId } : { isGuest: 'true' };
+      // Metadata for guest checkout
+      const metadata = userId ? { userId } : { isGuest: "true" };
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
@@ -98,10 +94,13 @@ exports.createStripePaymentIntent = onRequest(
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      return res.status(200).send({ clientSecret: paymentIntent.client_secret });
+      return { clientSecret: paymentIntent.client_secret };
     } catch (error) {
       logger.error("Stripe Payment Intent creation failed:", error);
-      return res.status(500).send({ error: "Failed to create Stripe Payment Intent." });
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", "Failed to create Stripe Payment Intent.");
     }
   }
 );
