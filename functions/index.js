@@ -43,22 +43,18 @@ function safeJsonParse(str) {
 /**
  * Creates a Stripe Payment Intent.
  */
-exports.createStripePaymentIntent = onRequest(
-  { region: "europe-west3", secrets: ["STRIPE_SECRET_KEY"], cors: corsOptions },
-  async (req, res) => {
-    if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
-    }
-
+exports.createStripePaymentIntent = onCall(
+  { region: "europe-west3", secrets: ["STRIPE_SECRET_KEY"] },
+  async (request) => {
     if (!stripe) {
       stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     }
 
-    const { userId, cart } = req.body || {};
+    const { userId, cart } = request.data || {};
 
     // Allow userId to be null (Guest Checkout) but require cart
     if (!cart || !Array.isArray(cart) || cart.length === 0) {
-      return res.status(400).send({ error: "Missing or invalid parameters: cart is required." });
+      throw new HttpsError("invalid-argument", "Missing or invalid parameters: cart is required.");
     }
 
     try {
@@ -75,14 +71,14 @@ exports.createStripePaymentIntent = onRequest(
       const amountInCents = Math.round(amount * 100);
 
       if (amountInCents < 50) {
-        return res.status(400).send({
-          error: `Amount is too small. Minimum charge is €0.50. Amount calculated: €${amount.toFixed(2)}`,
-        });
+        throw new HttpsError(
+          "failed-precondition",
+          `Amount is too small. Minimum charge is €0.50. Amount calculated: €${amount.toFixed(2)}`
+        );
       }
 
-      // Metadata for guest checkout: If no userId, maybe store email if provided in body (not implemented in req.body yet)
-      // For now, userId can be 'guest' or null.
-      const metadata = userId ? { userId } : { isGuest: 'true' };
+      // Metadata for guest checkout
+      const metadata = userId ? { userId } : { isGuest: "true" };
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
@@ -98,10 +94,13 @@ exports.createStripePaymentIntent = onRequest(
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      return res.status(200).send({ clientSecret: paymentIntent.client_secret });
+      return { clientSecret: paymentIntent.client_secret };
     } catch (error) {
       logger.error("Stripe Payment Intent creation failed:", error);
-      return res.status(500).send({ error: "Failed to create Stripe Payment Intent." });
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", "Failed to create Stripe Payment Intent.");
     }
   }
 );
@@ -167,6 +166,20 @@ const fulfillOrder = async (paymentIntent) => {
       const total = paymentIntent.amount / 100;
       const pointsToAward = Math.floor(total);
 
+      // Construct proper shipping address from user profile if available
+      let shippingAddress = null;
+      if (userId && Object.keys(userProfile).length > 0) {
+          shippingAddress = {
+              ...(userProfile.address || {}),
+              firstName: userProfile.firstName,
+              lastName: userProfile.lastName,
+              email: userProfile.email
+          };
+      } else {
+          // Fallback for guest (from Stripe or Session if implemented)
+          shippingAddress = paymentIntent.shipping || null;
+      }
+
       const orderData = {
         userId: userId || null, // Allow null for guest
         items: fullCartItems,
@@ -174,12 +187,7 @@ const fulfillOrder = async (paymentIntent) => {
         paymentIntentId: paymentIntent.id,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        // For guest checkout, shipping address should ideally come from Stripe or Session,
-        // but here we rely on userProfile.address or paymentIntent.shipping.
-        // If it's a guest, we might need to rely on Stripe's shipping details if collected there,
-        // or ensure the frontend passes it in 'stripe_sessions' earlier.
-        // For now, we use userProfile.address if available, otherwise null or placeholder.
-        shippingAddress: userProfile.address || paymentIntent.shipping || null,
+        shippingAddress: shippingAddress,
         status: "Em processamento",
       };
 

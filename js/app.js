@@ -383,7 +383,27 @@ const app = {
                 const button = closest('.add-to-cart-btn');
                 const productId = button.dataset.id;
                 const price = button.dataset.price || null;
-                this.addToCart(productId, price);
+
+                // Extract options if on detail page
+                const options = {};
+                const detailContent = document.getElementById('product-detail-content');
+
+                // Only use these inputs if we are actually viewing the product we are adding
+                if (detailContent && detailContent.contains(button)) {
+                    const colorInput = document.querySelector('input[name="selected_color"]:checked');
+                    const sizeInput = document.querySelector('input[name="selected_size"]:checked');
+                    if (colorInput) options.color = colorInput.value;
+                    if (sizeInput) options.size = sizeInput.value;
+                } else {
+                    // If not on detail page, check if product has options
+                    const product = this.products.find(p => p.id === productId);
+                    if (product && ((product.colors && product.colors.length > 0) || (product.sizes && product.sizes.length > 0))) {
+                        this.openProductOptionsModal(productId);
+                        return;
+                    }
+                }
+
+                this.addToCart(productId, price, options);
             }
             else if (closest('.quick-view-btn')) this.openPreviewModal(closest('.quick-view-btn').dataset.id);
             else if (closest('.quantity-change')) this.updateCartQuantity(closest('[data-id]').dataset.id, closest('.quantity-change').dataset.action);
@@ -1079,11 +1099,40 @@ const app = {
                         </div>
                         <p class="text-gray-300 text-lg mb-6">${product.description}</p>
 
+                        <div class="my-6 space-y-4">
+                            ${product.colors && product.colors.length > 0 ? `
+                                <div>
+                                    <label class="block text-gray-300 mb-2 font-semibold">Cor:</label>
+                                    <div class="flex flex-wrap gap-2" id="product-colors-container">
+                                        ${product.colors.map((c) => `
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="selected_color" value="${c}" class="sr-only peer">
+                                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${c}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${product.sizes && product.sizes.length > 0 ? `
+                                <div>
+                                    <label class="block text-gray-300 mb-2 font-semibold">Tamanho:</label>
+                                    <div class="flex flex-wrap gap-2" id="product-sizes-container">
+                                        ${product.sizes.map((s) => `
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="selected_size" value="${s}" class="sr-only peer">
+                                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${s}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+
                         <div class="my-6 bg-secondary p-4 rounded-lg">
                             <h3 class="text-xl font-bold text-white mb-3">Especificações</h3>
                             <ul class="space-y-2 text-gray-300 text-sm">
                                 ${product.brand ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Marca</span> <span class="font-semibold text-white">${product.brand}</span></li>` : ''}
-                                ${product.color ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Cor</span> <span class="font-semibold text-white">${product.color}</span></li>` : ''}
                                 ${product.material ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Material</span> <span class="font-semibold text-white">${product.material}</span></li>` : ''}
                                 <li class="flex justify-between py-1"><span>Disponibilidade</span> <span class="font-semibold ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}">${product.stock > 0 ? `Em Stock (${product.stock} unidades)` : 'Esgotado'}</span></li>
                             </ul>
@@ -1102,7 +1151,7 @@ const app = {
                     </div>
                 </div>`;
             this.initProductGallery();
-            this.initProductGallery();
+            this.initProductOptionsLogic(product);
             this.loadProductReviews(productId);
             this.updateWishlistIcons(product.id, this.isProductInWishlist(product.id));
             this.renderBundleSection(product, container);
@@ -1110,6 +1159,51 @@ const app = {
         } else {
             container.innerHTML = `<h2 class="text-center text-2xl py-20">Produto não encontrado.</h2>`;
         }
+    },
+
+    initProductOptionsLogic(product) {
+        const container = document.getElementById('product-detail-content');
+        if (!container) return;
+
+        const addToCartBtn = container.querySelector('.add-to-cart-btn');
+        if (!addToCartBtn) return;
+
+        const hasColors = product.colors && product.colors.length > 0;
+        const hasSizes = product.sizes && product.sizes.length > 0;
+
+        // If no options, no logic needed
+        if (!hasColors && !hasSizes) return;
+
+        const updateButtonState = () => {
+            let isValid = true;
+            if (hasColors) {
+                const selectedColor = container.querySelector('input[name="selected_color"]:checked');
+                if (!selectedColor) isValid = false;
+            }
+            if (hasSizes) {
+                const selectedSize = container.querySelector('input[name="selected_size"]:checked');
+                if (!selectedSize) isValid = false;
+            }
+
+            if (isValid) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.classList.remove('btn-disabled', 'opacity-50', 'cursor-not-allowed');
+                addToCartBtn.classList.add('btn-primary');
+                addToCartBtn.innerHTML = `<i class="fas fa-shopping-cart"></i> Adicionar ao Carrinho`;
+            } else {
+                addToCartBtn.disabled = true;
+                addToCartBtn.classList.add('btn-disabled', 'opacity-50', 'cursor-not-allowed');
+                addToCartBtn.classList.remove('btn-primary');
+                addToCartBtn.innerHTML = `Selecione as opções`;
+            }
+        };
+
+        // Initial check
+        updateButtonState();
+
+        // Attach listeners
+        const inputs = container.querySelectorAll('input[name="selected_color"], input[name="selected_size"]');
+        inputs.forEach(input => input.addEventListener('change', updateButtonState));
     },
 
     initProductGallery() {
@@ -1976,7 +2070,9 @@ const app = {
             category: getValue('category').toLowerCase(),
             stock: getInt('stock'),
             brand: getValue('brand'),
-            color: getValue('color'),
+            colors: (getValue('colors') || '').split(',').map(c => c.trim()).filter(c => c),
+            sizes: (getValue('sizes') || '').split(',').map(s => s.trim()).filter(s => s),
+            color: (getValue('colors') || '').split(',').map(c => c.trim()).filter(c => c)[0] || '',
             material: getValue('material'),
             tags: tagsArray,
             showUrgency: getChecked('showUrgency'),
@@ -2024,7 +2120,8 @@ const app = {
         form.category.value = product.category || '';
         form.stock.value = product.stock || 0;
         form.brand.value = product.brand || '';
-        form.color.value = product.color || '';
+        if (form.colors) form.colors.value = (product.colors || (product.color ? [product.color] : [])).join(', ');
+        if (form.sizes) form.sizes.value = (product.sizes || []).join(', ');
         form.material.value = product.material || '';
         form.showUrgency.checked = !!product.showUrgency;
         form.tags.value = (product.tags || []).join(', ');
@@ -3087,7 +3184,7 @@ const app = {
         this.hideLoading();
     },
 
-    async addToCart(productId, finalPrice = null) {
+    async addToCart(productId, finalPrice = null, options = {}) {
         const product = this.products.find(p => p.id === productId);
         if (!product) return;
 
@@ -3098,23 +3195,32 @@ const app = {
         }
 
         const wasEmpty = this.cart.length === 0;
-        const cartItem = this.cart.find(item => item.id === productId);
+
+        // Ensure legacy items have cartId
+        this.cart.forEach(item => { if (!item.cartId) item.cartId = item.id; });
+
+        // Create a unique key for the cart item based on ID and options
+        const cartId = productId + (options.color ? `-${options.color}` : '') + (options.size ? `-${options.size}` : '');
+
+        const cartItem = this.cart.find(item => item.cartId === cartId);
 
         if (cartItem) {
-            // If item is already in cart, just increment quantity. Don't change the price.
-            // This prevents a non-discounted item from becoming discounted if added again via a bundle.
+            // If item is already in cart, just increment quantity.
             cartItem.quantity++;
         } else {
             const price = finalPrice !== null ? finalPrice : product.price;
             const imageUrl = (product.images && product.images[0]) || product.image;
             this.cart.push({
+                cartId: cartId,
                 id: product.id,
                 name: product.name,
                 price: price, // Final price
                 originalPrice: product.price, // Base price
                 image: imageUrl,
                 quantity: 1,
-                discountApplied: price < product.price
+                discountApplied: price < product.price,
+                selectedColor: options.color || null,
+                selectedSize: options.size || null
             });
         }
 
@@ -3134,8 +3240,8 @@ const app = {
         if (document.getElementById('preview-modal')?.classList.contains('flex')) this.closePreviewModal();
     },
 
-        async updateCartQuantity(productId, action) {
-            const itemIndex = this.cart.findIndex(item => item.id === productId);
+    async updateCartQuantity(cartId, action) {
+        const itemIndex = this.cart.findIndex(item => (item.cartId || item.id) === cartId);
             if (itemIndex === -1) return;
             if (action === 'increase') this.cart[itemIndex].quantity++;
             else if (action === 'decrease') {
@@ -3148,8 +3254,8 @@ const app = {
             if (window.location.hash.includes('/cart')) this.renderCartPage();
         },
 
-        async removeFromCart(productId) {
-            this.cart = this.cart.filter(item => item.id !== productId);
+    async removeFromCart(cartId) {
+        this.cart = this.cart.filter(item => (item.cartId || item.id) !== cartId);
             await this.saveCart();
             this.updateCartCountDisplay();
             this.renderSidebarCart();
@@ -3222,10 +3328,11 @@ const app = {
                             ? `<span class="text-gray-500 line-through mr-2">€${item.originalPrice.toFixed(2)}</span><span class="text-accent font-bold text-lg">€${item.price.toFixed(2)}</span>`
                             : `<span class="text-accent font-bold text-lg">€${item.price.toFixed(2)}</span>`;
                         return `
-                            <div class="flex items-center border-b border-gray-700 py-4" data-id="${item.id}">
+                            <div class="flex items-center border-b border-gray-700 py-4" data-id="${item.cartId || item.id}">
                                 <img src="${item.image}" alt="${item.name}" class="w-24 h-24 object-cover rounded-md mr-6" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1a1a1a/e11d48?text=Img';" loading="lazy">
                                 <div class="flex-1">
                                     <h3 class="text-lg font-semibold">${item.name}</h3>
+                                    ${item.selectedColor || item.selectedSize ? `<div class="text-sm text-gray-400 mb-1">${item.selectedColor ? `Cor: ${item.selectedColor} ` : ''}${item.selectedSize ? `Tam: ${item.selectedSize}` : ''}</div>` : ''}
                                     ${priceDisplay}
                                 </div>
                                 <div class="flex items-center gap-4">
@@ -3319,10 +3426,11 @@ const app = {
                             ? `<p><span class="text-gray-500 line-through mr-1">€${item.originalPrice.toFixed(2)}</span><span class="text-accent font-bold">€${item.price.toFixed(2)}</span></p>`
                             : `<p class="text-accent font-bold">€${item.price.toFixed(2)}</p>`;
                         return `
-                            <div class="flex items-start gap-4 py-4 border-b border-gray-800" data-id="${item.id}">
+                            <div class="flex items-start gap-4 py-4 border-b border-gray-800" data-id="${item.cartId || item.id}">
                                 <img src="${item.image}" alt="${item.name}" class="w-20 h-20 object-cover rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1a1a1a/e11d48?text=Img';" loading="lazy">
                                 <div class="flex-1">
                                     <h3 class="font-semibold">${item.name}</h3>
+                                    ${item.selectedColor || item.selectedSize ? `<div class="text-xs text-gray-400 mb-1">${item.selectedColor ? `Cor: ${item.selectedColor} ` : ''}${item.selectedSize ? `Tam: ${item.selectedSize}` : ''}</div>` : ''}
                                     ${priceDisplay}
                                     <div class="flex items-center border border-gray-600 rounded-md mt-2 w-fit">
                                         <button class="quantity-change p-2 text-lg" aria-label="Diminuir quantidade de ${item.name}" data-action="decrease">-</button>
@@ -3981,7 +4089,7 @@ const app = {
         });
 
         let filtersHtml = '';
-        if (Object.keys(brandCounts).length > 1) {
+        if (Object.keys(brandCounts).length >= 1) {
             filtersHtml += `<div><h4 class="font-semibold mb-3">Marca</h4><div class="space-y-2">`;
             for (const brand in brandCounts) {
                 filtersHtml += `<label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:text-accent">
@@ -3991,7 +4099,7 @@ const app = {
             }
             filtersHtml += `</div></div>`;
         }
-        if (Object.keys(categoryCounts).length > 1) {
+        if (Object.keys(categoryCounts).length >= 1) {
             filtersHtml += `<div><h4 class="font-semibold mb-3">Categoria</h4><div class="space-y-2">`;
             for (const category in categoryCounts) {
                 filtersHtml += `<label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:text-accent">
@@ -4327,6 +4435,100 @@ const app = {
         } finally {
             this.hideLoading();
         }
+    },
+
+    openProductOptionsModal(productId) {
+        const product = this.products.find(p => p.id === productId);
+        if (!product) return;
+
+        const modal = document.getElementById('product-options-modal');
+        const container = document.getElementById('options-form-container');
+
+        let html = `<div class="flex items-center gap-4 mb-4">
+            <img src="${(product.images && product.images[0]) || product.image}" class="w-16 h-16 object-cover rounded-md">
+            <div>
+                <h3 class="font-bold">${product.name}</h3>
+                <p class="text-accent">€${product.price.toFixed(2)}</p>
+            </div>
+        </div>`;
+
+        html += '<div class="space-y-4">';
+
+        if (product.colors && product.colors.length > 0) {
+            html += `
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">Cor:</label>
+                    <div class="flex flex-wrap gap-2">
+                        ${product.colors.map((c) => `
+                            <label class="cursor-pointer">
+                                <input type="radio" name="modal_selected_color" value="${c}" class="sr-only peer">
+                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${c}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+
+        if (product.sizes && product.sizes.length > 0) {
+            html += `
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">Tamanho:</label>
+                    <div class="flex flex-wrap gap-2">
+                        ${product.sizes.map((s) => `
+                            <label class="cursor-pointer">
+                                <input type="radio" name="modal_selected_size" value="${s}" class="sr-only peer">
+                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${s}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+
+        html += '</div>';
+
+        html += `<button id="confirm-options-btn" class="btn btn-primary w-full mt-6 opacity-50 cursor-not-allowed" disabled>Adicionar ao Carrinho</button>`;
+
+        container.innerHTML = html;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        // Logic to enable button
+        const btn = document.getElementById('confirm-options-btn');
+        const updateBtn = () => {
+            const color = container.querySelector('input[name="modal_selected_color"]:checked');
+            const size = container.querySelector('input[name="modal_selected_size"]:checked');
+            const colorValid = !product.colors || product.colors.length === 0 || color;
+            const sizeValid = !product.sizes || product.sizes.length === 0 || size;
+
+            if (colorValid && sizeValid) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        };
+
+        container.querySelectorAll('input').forEach(input => input.addEventListener('change', updateBtn));
+
+        btn.onclick = () => {
+            const colorInput = container.querySelector('input[name="modal_selected_color"]:checked');
+            const sizeInput = container.querySelector('input[name="modal_selected_size"]:checked');
+            const options = {};
+            if (colorInput) options.color = colorInput.value;
+            if (sizeInput) options.size = sizeInput.value;
+
+            this.addToCart(productId, product.price, options);
+            this.closeProductOptionsModal();
+        };
+
+        document.getElementById('close-product-options-modal').onclick = () => this.closeProductOptionsModal();
+    },
+
+    closeProductOptionsModal() {
+        const modal = document.getElementById('product-options-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     },
 
     initExitIntentPopup() {

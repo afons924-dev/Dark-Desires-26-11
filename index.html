@@ -43,7 +43,7 @@
 </head>
 <body class="overflow-x-hidden">
 <div class="bg-secondary text-white text-center py-2 text-sm" id="shipping-message" data-i18n-html="shippingMessage">
-        🚚 Entrega estimada entre <strong>2 a 4 dias úteis</strong> com envio discreto.
+        🚚 Entrega estimada entre <strong>2 a 3 semanas</strong> com envio discreto.
     </div>
 <header class="bg-primary/80 backdrop-blur-lg shadow-lg sticky top-0 z-30 border-b border-gray-800 relative">
 <div class="container mx-auto px-4">
@@ -148,8 +148,8 @@
 </div>
 </footer>
 <!-- Modals e Overlays -->
-<div aria-labelledby="search-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-70 z-40 hidden items-start justify-center pt-24 transition-opacity duration-300" id="search-overlay" role="dialog">
-<div class="relative w-full max-w-xl">
+<div aria-labelledby="search-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-70 z-40 hidden items-start justify-center pt-24 transition-opacity duration-300 flex" id="search-overlay" role="dialog">
+<div class="relative w-full max-w-xl mx-auto px-4">
 <h2 class="sr-only" id="search-heading" data-i18n="searchModalTitle">Pesquisa de Produtos</h2>
 <label class="sr-only" for="search-input" data-i18n="searchInputLabel">Pesquisar produtos</label>
 <input class="w-full p-4 rounded-md form-input text-lg" id="search-input" placeholder="Pesquisar produtos..." type="text" data-i18n-placeholder="searchInputPlaceholder"/>
@@ -159,6 +159,13 @@
 </div>
 <div aria-labelledby="preview-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[70] hidden items-center justify-center p-4 transition-opacity duration-300" id="preview-modal" role="dialog">
 <div class="bg-primary rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative grid grid-cols-1 md:grid-cols-2 gap-6" id="preview-content"></div>
+</div>
+<div aria-labelledby="options-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[70] hidden items-center justify-center p-4 transition-opacity duration-300" id="product-options-modal" role="dialog">
+    <div class="bg-primary rounded-lg shadow-xl w-11/12 max-w-md p-6 relative" id="product-options-content">
+        <button aria-label="Fechar" class="absolute top-4 right-4 text-gray-400 hover:text-white" id="close-product-options-modal"><i class="fas fa-times text-2xl"></i></button>
+        <h2 class="text-2xl font-bold text-white mb-4" id="options-heading">Escolha as Opções</h2>
+        <div id="options-form-container"></div>
+    </div>
 </div>
 <div aria-labelledby="admin-order-modal-title" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[70] hidden items-center justify-center p-4 transition-opacity duration-300" id="admin-order-detail-modal" role="dialog">
 <div class="bg-primary rounded-lg shadow-xl w-11/12 max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative" id="admin-order-detail-content"></div>
