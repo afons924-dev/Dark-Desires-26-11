@@ -43,9 +43,15 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-gray-300 mb-2" for="product-color" data-i18n="colorLabel">Cor</label>
-                    <input class="w-full p-3 rounded-md form-input" id="product-color" name="color" type="text">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-300 mb-2" for="product-colors">Cores Disponíveis (sep. por vírgula)</label>
+                        <input class="w-full p-3 rounded-md form-input" id="product-colors" name="colors" type="text" placeholder="Ex: Vermelho, Preto, Rosa">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 mb-2" for="product-sizes">Tamanhos Disponíveis (sep. por vírgula)</label>
+                        <input class="w-full p-3 rounded-md form-input" id="product-sizes" name="sizes" type="text" placeholder="Ex: S, M, L, XL">
+                    </div>
                 </div>
 
                 <div>
