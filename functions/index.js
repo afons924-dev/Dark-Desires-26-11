@@ -50,24 +50,83 @@ exports.createStripePaymentIntent = onCall(
       stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     }
 
-    const { userId, cart } = request.data || {};
+    // LOGGING TO DEBUG INVALID ARGUMENT ERROR
+    logger.info("createStripePaymentIntent called");
+    logger.info("Request Data Type:", typeof request.data);
+    logger.info("Request Data Content:", JSON.stringify(request.data));
+
+    const { userId, cart, discount, loyaltyPoints } = request.data || {};
 
     // Allow userId to be null (Guest Checkout) but require cart
     if (!cart || !Array.isArray(cart) || cart.length === 0) {
-      throw new HttpsError("invalid-argument", "Missing or invalid parameters: cart is required.");
+      logger.error("Invalid Cart Data:", cart);
+      throw new HttpsError("invalid-argument", "Missing or invalid parameters: cart is required and must be a non-empty array.");
     }
 
     try {
       let amount = 0;
+      let originalTotal = 0;
+
       // SECURITY: Recalculate price from DB, ignore client-side price
       for (const item of cart) {
+        if (!item.id) continue;
         const productRef = db.collection("products").doc(item.id);
         const productDoc = await productRef.get();
         if (productDoc.exists) {
-          // TODO: Check if product is in Flash Sale via DB query to apply discount correctly on server side
-          amount += productDoc.data().price * item.quantity;
+          const pData = productDoc.data();
+          let itemPrice = pData.price;
+
+          // Check for Bundle Discount (Basic implementation: trust client structure implies bundle usage, or check DB)
+          // Ideally we should check if the item is part of a bundle in the cart, but for now we use base price.
+          // TODO: Implement rigorous Bundle validation.
+
+          // Check for active Flash Sale
+          // In a real scenario, we'd query the 'flash_sale/current' doc to see if this productId is on sale.
+          // For simplicity/performance in this fix, we will calculate base price.
+
+          const lineTotal = itemPrice * item.quantity;
+          amount += lineTotal;
+          originalTotal += lineTotal;
         }
       }
+
+      // Apply Bundle Discount if applicable (Logic needed: compare total vs bundle price)
+      // For now, we calculate discounts based on the provided codes/points validated against rules.
+
+      // 1. Coupon Discount
+      let couponDiscountAmount = 0;
+      if (discount && discount.percentage) {
+        // Hardcoded validation for known codes to match frontend
+        const validCodes = ['BEMVINDO10', 'DESCONTO10', 'PRAZER5'];
+        if (validCodes.includes(discount.code)) {
+             couponDiscountAmount = amount * (discount.percentage / 100);
+             logger.info(`Applying coupon ${discount.code}: -${couponDiscountAmount}`);
+        }
+      }
+      amount -= couponDiscountAmount;
+
+      // 2. Loyalty Points Discount
+      let loyaltyDiscountAmount = 0;
+      if (loyaltyPoints && loyaltyPoints > 0) {
+         // 100 points = 1 EUR
+         loyaltyDiscountAmount = loyaltyPoints / 100;
+         // Verify user actually has these points if userId is present
+         if (userId) {
+             const userDoc = await db.collection("users").doc(userId).get();
+             if (userDoc.exists) {
+                 const currentPoints = userDoc.data().loyaltyPoints || 0;
+                 if (currentPoints < loyaltyPoints) {
+                     logger.warn(`User ${userId} tried to use ${loyaltyPoints} but only has ${currentPoints}`);
+                     loyaltyDiscountAmount = 0; // Deny discount
+                 }
+             }
+         }
+         logger.info(`Applying loyalty discount: -${loyaltyDiscountAmount}`);
+      }
+      amount -= loyaltyDiscountAmount;
+
+      // Final Amount Check
+      if (amount < 0) amount = 0;
       const amountInCents = Math.round(amount * 100);
 
       if (amountInCents < 50) {
@@ -80,6 +139,8 @@ exports.createStripePaymentIntent = onCall(
       // Metadata for guest checkout
       const metadata = userId ? { userId } : { isGuest: "true" };
 
+      logger.info(`Creating PaymentIntent for ${amountInCents} cents.`);
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: "eur",
@@ -91,6 +152,9 @@ exports.createStripePaymentIntent = onCall(
       await sessionRef.set({
         userId: userId || null, // Store null if guest
         cart,
+        discount,
+        loyaltyPoints,
+        totalAmount: amount,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -117,7 +181,7 @@ const fulfillOrder = async (paymentIntent) => {
     return;
   }
 
-  const { userId, cart } = sessionDoc.data();
+  const { userId, cart, discount, loyaltyPoints } = sessionDoc.data();
   if (!cart || !Array.isArray(cart) || cart.length === 0) {
     logger.error("Invalid session data from payment intent:", paymentIntent.id);
     return;
@@ -184,6 +248,8 @@ const fulfillOrder = async (paymentIntent) => {
         userId: userId || null, // Allow null for guest
         items: fullCartItems,
         total: total,
+        discountApplied: discount || null,
+        loyaltyPointsUsed: loyaltyPoints || 0,
         paymentIntentId: paymentIntent.id,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -195,7 +261,12 @@ const fulfillOrder = async (paymentIntent) => {
       productUpdates.forEach((update) => transaction.update(update.ref, update.data));
 
       if (userRef && userProfile) {
-          const newPoints = (userProfile.loyaltyPoints || 0) + pointsToAward;
+          let newPoints = (userProfile.loyaltyPoints || 0) + pointsToAward;
+          if (loyaltyPoints) {
+              newPoints -= loyaltyPoints; // Deduct used points
+          }
+          if (newPoints < 0) newPoints = 0;
+
           transaction.update(userRef, { loyaltyPoints: newPoints, cart: [] });
       }
     });

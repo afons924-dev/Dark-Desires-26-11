@@ -799,30 +799,21 @@ const app = {
     },
 
     initFeaturedProductCarousel() {
-        const carousel = document.getElementById('featured-carousel');
+        // Now renders a Grid instead of a Carousel
+        const grid = document.getElementById('featured-grid');
+        // Clean up old carousel buttons if they exist in the DOM but we are using grid now
         const prevBtn = document.getElementById('carousel-prev');
         const nextBtn = document.getElementById('carousel-next');
-        if (!carousel || !prevBtn || !nextBtn) return;
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+
+        if (!grid) return;
 
         const featuredProducts = [...this.products]
             .sort((a, b) => (b.sold || 0) - (a.sold || 0))
             .slice(0, 8);
-        carousel.innerHTML = featuredProducts.map(p => `<div class="snap-start shrink-0 w-80">${renderProductCard(p, this.isProductInWishlist.bind(this))}</div>`).join('');
 
-        const updateCarouselButtons = () => {
-            const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
-            prevBtn.style.display = carousel.scrollLeft > 0 ? 'flex' : 'none';
-            nextBtn.style.display = carousel.scrollLeft < maxScrollLeft -1 ? 'flex' : 'none';
-        };
-
-        prevBtn.classList.add('carousel-nav-btn');
-        nextBtn.classList.add('carousel-nav-btn');
-
-        carousel.addEventListener('scroll', updateCarouselButtons);
-        nextBtn.addEventListener('click', () => carousel.scrollBy({ left: carousel.clientWidth * 0.8, behavior: 'smooth' }));
-        prevBtn.addEventListener('click', () => carousel.scrollBy({ left: -carousel.clientWidth * 0.8, behavior: 'smooth' }));
-
-        setTimeout(updateCarouselButtons, 100);
+        grid.innerHTML = featuredProducts.map(p => renderProductCard(p, this.isProductInWishlist.bind(this))).join('');
     },
 
     async renderTestimonials() {
@@ -1104,12 +1095,20 @@ const app = {
                                 <div>
                                     <label class="block text-gray-300 mb-2 font-semibold">Cor:</label>
                                     <div class="flex flex-wrap gap-2" id="product-colors-container">
-                                        ${product.colors.map((c) => `
-                                            <label class="cursor-pointer">
-                                                <input type="radio" name="selected_color" value="${c}" class="sr-only peer">
-                                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${c}</span>
+                                        ${product.colors.map((c) => {
+                                            const isAvailable = product.variantsStock ? product.variantsStock[c] !== false : true;
+                                            return `
+                                            <label class="cursor-pointer relative group">
+                                                <input type="radio" name="selected_color" value="${c}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
+                                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
+                                                    ${isAvailable
+                                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
+                                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50 relative overflow-hidden'}">
+                                                    ${c}
+                                                    ${!isAvailable ? '<span class="absolute inset-0 bg-transparent flex items-center justify-center text-red-500 transform -rotate-12 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">Esgotado</span>' : ''}
+                                                </span>
                                             </label>
-                                        `).join('')}
+                                        `}).join('')}
                                     </div>
                                 </div>
                             ` : ''}
@@ -1118,12 +1117,20 @@ const app = {
                                 <div>
                                     <label class="block text-gray-300 mb-2 font-semibold">Tamanho:</label>
                                     <div class="flex flex-wrap gap-2" id="product-sizes-container">
-                                        ${product.sizes.map((s) => `
-                                            <label class="cursor-pointer">
-                                                <input type="radio" name="selected_size" value="${s}" class="sr-only peer">
-                                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${s}</span>
+                                        ${product.sizes.map((s) => {
+                                            const isAvailable = product.variantsStock ? product.variantsStock[s] !== false : true;
+                                            return `
+                                            <label class="cursor-pointer relative group">
+                                                <input type="radio" name="selected_size" value="${s}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
+                                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
+                                                    ${isAvailable
+                                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
+                                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50 relative overflow-hidden'}">
+                                                    ${s}
+                                                    ${!isAvailable ? '<span class="absolute inset-0 bg-transparent flex items-center justify-center text-red-500 transform -rotate-12 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">Esgotado</span>' : ''}
+                                                </span>
                                             </label>
-                                        `).join('')}
+                                        `}).join('')}
                                     </div>
                                 </div>
                             ` : ''}
@@ -1480,6 +1487,15 @@ const app = {
     const form = document.getElementById('admin-product-form');
     form.addEventListener('submit', (e) => this.handleAdminFormSubmit(e));
     document.getElementById('clear-form-btn').addEventListener('click', () => this.clearAdminForm());
+
+    // Variant Management Listeners
+    const colorInput = document.getElementById('product-colors');
+    const sizeInput = document.getElementById('product-sizes');
+    if (colorInput && sizeInput) {
+        const updateVariants = () => this.renderVariantManagement();
+        colorInput.addEventListener('input', this.debounce(updateVariants, 500));
+        sizeInput.addEventListener('input', this.debounce(updateVariants, 500));
+    }
 
     // --------------------------------------------
     //  DROPZONE PATCH SEGURO
@@ -1863,6 +1879,59 @@ const app = {
         }
     },
 
+    renderVariantManagement() {
+        const container = document.getElementById('variant-stock-management');
+        const list = document.getElementById('variants-container');
+        const colorInput = document.getElementById('product-colors');
+        const sizeInput = document.getElementById('product-sizes');
+
+        if (!container || !list || !colorInput || !sizeInput) return;
+
+        const colors = colorInput.value.split(',').map(c => c.trim()).filter(c => c);
+        const sizes = sizeInput.value.split(',').map(s => s.trim()).filter(s => s);
+
+        if (colors.length === 0 && sizes.length === 0) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+
+        // Preserve existing checked states if re-rendering during edit
+        const currentChecks = {};
+        list.querySelectorAll('input[type="checkbox"]').forEach(input => {
+            currentChecks[input.dataset.variant] = input.checked;
+        });
+
+        // Use this.adminEditingProductVariants if available (from populate)
+        const savedVariants = this.adminEditingProductVariants || {};
+
+        let html = '';
+
+        colors.forEach(color => {
+            // Default to true if not defined
+            const isChecked = currentChecks[color] !== undefined ? currentChecks[color] : (savedVariants[color] !== false);
+            html += `
+                <label class="flex items-center space-x-2 bg-gray-800 p-2 rounded border border-gray-600">
+                    <input type="checkbox" data-variant="${color}" class="variant-stock-checkbox form-checkbox h-4 w-4 text-accent rounded border-gray-500 bg-gray-700 focus:ring-accent" ${isChecked ? 'checked' : ''}>
+                    <span class="text-sm truncate" title="${color}">Cor: ${color}</span>
+                </label>
+            `;
+        });
+
+        sizes.forEach(size => {
+             const isChecked = currentChecks[size] !== undefined ? currentChecks[size] : (savedVariants[size] !== false);
+             html += `
+                <label class="flex items-center space-x-2 bg-gray-800 p-2 rounded border border-gray-600">
+                    <input type="checkbox" data-variant="${size}" class="variant-stock-checkbox form-checkbox h-4 w-4 text-accent rounded border-gray-500 bg-gray-700 focus:ring-accent" ${isChecked ? 'checked' : ''}>
+                    <span class="text-sm truncate" title="${size}">Tam: ${size}</span>
+                </label>
+            `;
+        });
+
+        list.innerHTML = html;
+    },
+
     renderAdminProductList() {
         const listEl = document.getElementById('admin-product-list');
         if (!listEl) return;
@@ -2063,6 +2132,13 @@ const app = {
         const tagsValue = getValue('tags');
         const tagsArray = tagsValue ? tagsValue.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
+        // Capture Variant Stock
+        const variantsStock = {};
+        const variantCheckboxes = document.querySelectorAll('.variant-stock-checkbox');
+        variantCheckboxes.forEach(cb => {
+            variantsStock[cb.dataset.variant] = cb.checked;
+        });
+
         const productData = {
             name: getValue('name'),
             description: getValue('description'),
@@ -2080,7 +2156,8 @@ const app = {
             // Preserve rating when updating
             averageRating: productId ? (this.products.find(p => p.id === productId)?.averageRating || 0) : 0,
             ratingCount: productId ? (this.products.find(p => p.id === productId)?.ratingCount || 0) : 0,
-            aliexpressUrl: getValue('aliexpressUrl')
+            aliexpressUrl: getValue('aliexpressUrl'),
+            variantsStock: variantsStock
         };
 
         try {
@@ -2127,6 +2204,10 @@ const app = {
         form.tags.value = (product.tags || []).join(', ');
         form.aliexpressUrl.value = product.aliexpressUrl || '';
 
+        // Load variants availability
+        this.adminEditingProductVariants = product.variantsStock || {};
+        this.renderVariantManagement();
+
         // Populate and render the image gallery
         this.adminExistingImages = product.images || (product.image ? [product.image] : []);
         this.renderAdminImageGallery();
@@ -2145,9 +2226,11 @@ const app = {
         // Reset image management state
         this.adminImageFiles = [];
         this.adminExistingImages = [];
+        this.adminEditingProductVariants = {};
 
         // Update the UI
         this.renderAdminImageGallery();
+        this.renderVariantManagement();
 
         const adminFormTitle = document.getElementById('admin-form-title');
         if (adminFormTitle) {
@@ -4084,22 +4167,18 @@ const app = {
         const categoryCounts = {};
 
         results.forEach(p => {
-            if (p.brand) brandCounts[p.brand] = (brandCounts[p.brand] || 0) + 1;
-            if (p.category) categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
+            // Group null/undefined brands as 'Outros' or skip
+            const brand = p.brand || 'Outras';
+            brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+
+            const category = p.category || 'Outros';
+            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
         });
 
         let filtersHtml = '';
-        if (Object.keys(brandCounts).length >= 1) {
-            filtersHtml += `<div><h4 class="font-semibold mb-3">Marca</h4><div class="space-y-2">`;
-            for (const brand in brandCounts) {
-                filtersHtml += `<label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:text-accent">
-                    <input type="checkbox" value="${brand}" data-filter-type="brand" class="search-filter-checkbox h-4 w-4 rounded border-gray-600 bg-gray-700 text-accent focus:ring-accent">
-                    <span>${brand} <span class="text-xs text-gray-500">(${brandCounts[brand]})</span></span>
-                </label>`;
-            }
-            filtersHtml += `</div></div>`;
-        }
-        if (Object.keys(categoryCounts).length >= 1) {
+
+        // Always show Category filters if any exist
+        if (Object.keys(categoryCounts).length > 0) {
             filtersHtml += `<div><h4 class="font-semibold mb-3">Categoria</h4><div class="space-y-2">`;
             for (const category in categoryCounts) {
                 filtersHtml += `<label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:text-accent">
@@ -4110,7 +4189,21 @@ const app = {
             filtersHtml += `</div></div>`;
         }
 
-        filtersContainer.innerHTML = filtersHtml || '<p class="text-sm text-gray-500">Não há filtros para estes resultados.</p>';
+        // Always show Brand filters if any exist
+        if (Object.keys(brandCounts).length > 0) {
+             // Add a separator if categories were added
+            if(filtersHtml) filtersHtml += `<hr class="border-gray-700 my-4">`;
+            filtersHtml += `<div><h4 class="font-semibold mb-3">Marca</h4><div class="space-y-2">`;
+            for (const brand in brandCounts) {
+                filtersHtml += `<label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:text-accent">
+                    <input type="checkbox" value="${brand}" data-filter-type="brand" class="search-filter-checkbox h-4 w-4 rounded border-gray-600 bg-gray-700 text-accent focus:ring-accent">
+                    <span>${brand} <span class="text-xs text-gray-500">(${brandCounts[brand]})</span></span>
+                </label>`;
+            }
+            filtersHtml += `</div></div>`;
+        }
+
+        filtersContainer.innerHTML = filtersHtml || '<p class="text-sm text-gray-500">Não há filtros disponíveis.</p>';
 
         filtersContainer.querySelectorAll('.search-filter-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', () => this.applySearchFilters());
@@ -4459,12 +4552,19 @@ const app = {
                 <div>
                     <label class="block text-gray-300 mb-2 font-semibold">Cor:</label>
                     <div class="flex flex-wrap gap-2">
-                        ${product.colors.map((c) => `
-                            <label class="cursor-pointer">
-                                <input type="radio" name="modal_selected_color" value="${c}" class="sr-only peer">
-                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${c}</span>
+                        ${product.colors.map((c) => {
+                            const isAvailable = product.variantsStock ? product.variantsStock[c] !== false : true;
+                            return `
+                            <label class="cursor-pointer relative group">
+                                <input type="radio" name="modal_selected_color" value="${c}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
+                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
+                                    ${isAvailable
+                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
+                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50'}">
+                                    ${c}
+                                </span>
                             </label>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>`;
         }
@@ -4474,12 +4574,19 @@ const app = {
                 <div>
                     <label class="block text-gray-300 mb-2 font-semibold">Tamanho:</label>
                     <div class="flex flex-wrap gap-2">
-                        ${product.sizes.map((s) => `
-                            <label class="cursor-pointer">
-                                <input type="radio" name="modal_selected_size" value="${s}" class="sr-only peer">
-                                <span class="px-4 py-2 bg-gray-700 rounded-md border border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600 transition-all text-sm uppercase">${s}</span>
+                        ${product.sizes.map((s) => {
+                            const isAvailable = product.variantsStock ? product.variantsStock[s] !== false : true;
+                            return `
+                            <label class="cursor-pointer relative group">
+                                <input type="radio" name="modal_selected_size" value="${s}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
+                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
+                                    ${isAvailable
+                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
+                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50'}">
+                                    ${s}
+                                </span>
                             </label>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>`;
         }

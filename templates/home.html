@@ -136,15 +136,13 @@
     </div>
 </section>
 
-<!-- Featured Products -->
+<!-- Featured Products (UPDATED: 4x2 Grid) -->
 <section class="py-16 sm:py-24 bg-background">
     <div class="container mx-auto px-4">
         <h2 class="text-4xl font-bold text-center mb-4" data-i18n="featuredTitle">Em Destaque</h2>
         <p class="text-center text-gray-400 mb-12 max-w-2xl mx-auto" data-i18n="featuredSubtitle">Os nossos best-sellers e as novidades mais excitantes, escolhidos para si.</p>
-        <div class="relative">
-            <div class="flex overflow-x-auto snap-x snap-mandatory scroll-p-4 gap-8 -mx-4 px-4" id="featured-carousel"></div>
-            <button aria-label="Produtos anteriores" class="absolute top-1/2 -translate-y-1/2 -left-4 rounded-full w-12 h-12 flex items-center justify-center shadow-lg carousel-nav-btn" id="carousel-prev" data-i18n-aria="prevProducts"><i class="fas fa-chevron-left"></i></button>
-            <button aria-label="Próximos produtos" class="absolute top-1/2 -translate-y-1/2 -right-4 rounded-full w-12 h-12 flex items-center justify-center shadow-lg carousel-nav-btn" id="carousel-next" data-i18n-aria="nextProducts"><i class="fas fa-chevron-right"></i></button>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6" id="featured-grid">
+            <!-- Products injected by JS -->
         </div>
     </div>
 </section>
@@ -175,7 +173,7 @@
 </section>
 
 <!-- About Section (Moved to Bottom, Lighter BG, Merged Content) -->
-<section class="about-section bg-secondary py-16 mb-24">
+<section class="about-section bg-secondary py-16 mb-12">
     <div class="container mx-auto px-4">
         <div class="text-center mb-12">
             <h2 class="text-4xl font-bold mb-4 text-white" data-i18n="aboutTitle">A Nossa História</h2>
@@ -241,6 +239,9 @@
         </div>
     </div>
 </section>
+
+<!-- Separator Line (Issue 3) -->
+<div class="h-px bg-gray-800 my-12 w-full max-w-7xl mx-auto opacity-50"></div>
 
 <!-- Flash Sale Section -->
 <section id="flash-sale-section" class="py-16 bg-primary border-y-2 border-accent hidden">
