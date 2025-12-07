@@ -86,7 +86,7 @@ const app = {
     filters: { category: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] },
     filteredProducts: [],
     currentPage: 1,
-    productsPerPage: 8,
+    productsPerPage: 16,
     discount: { code: '', percentage: 0, amount: 0 },
     loyalty: { pointsUsed: 0, discountAmount: 0 },
     stripe: null, stripeElements: null, paymentIntentClientSecret: null,
