@@ -3681,7 +3681,15 @@ const app = {
         const renderCheckboxFilter = (filterType, containerId) => {
             const container = document.getElementById(containerId);
             if (!container) return;
-            const options = [...new Set(this.products.map(p => p[filterType]).filter(p => p && p !== 'N/A'))].sort();
+
+            const options = [...new Set(this.products.flatMap(p => {
+                const val = p[filterType];
+                if (!val || val === 'N/A') return [];
+                // If it's an array (like tags), use it. If string, split by comma or plus.
+                if (Array.isArray(val)) return val;
+                return val.split(/[+,]/).map(s => s.trim()).filter(s => s);
+            }))].sort();
+
             if (options.length === 0) {
                 container.innerHTML = `<p class="text-sm text-gray-500" data-i18n="noFilterOptions">Nenhuma opção.</p>`;
                 return;
@@ -3775,7 +3783,16 @@ const app = {
         // Advanced Filters
         ['brand', 'color', 'material'].forEach(filterType => {
             if (this.filters[filterType] && this.filters[filterType].length > 0) {
-                filtered = filtered.filter(p => this.filters[filterType].includes(p[filterType]));
+                filtered = filtered.filter(p => {
+                    const val = p[filterType];
+                    if (!val) return false;
+                    let values = [];
+                    if (Array.isArray(val)) values = val;
+                    else values = val.split(/[+,]/).map(s => s.trim());
+
+                    // Check if any of the product's values match any of the selected filters
+                    return values.some(v => this.filters[filterType].includes(v));
+                });
             }
         });
 
