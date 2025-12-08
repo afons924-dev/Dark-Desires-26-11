@@ -3682,13 +3682,16 @@ const app = {
             const container = document.getElementById(containerId);
             if (!container) return;
 
+            // Blacklist of terms to exclude from filters (case-insensitive)
+            const FILTER_BLACKLIST = ['balrog', 'default', 'padrao', 'padrão'];
+
             const options = [...new Set(this.products.flatMap(p => {
                 const val = p[filterType];
                 if (!val || val === 'N/A') return [];
                 // If it's an array (like tags), use it. If string, split by comma or plus.
                 if (Array.isArray(val)) return val;
                 return val.split(/[+,]/).map(s => s.trim()).filter(s => s);
-            }))].sort();
+            }))].filter(opt => !FILTER_BLACKLIST.includes(opt.toLowerCase())).sort();
 
             if (options.length === 0) {
                 container.innerHTML = `<p class="text-sm text-gray-500" data-i18n="noFilterOptions">Nenhuma opção.</p>`;

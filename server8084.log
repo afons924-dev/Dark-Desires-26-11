@@ -1,0 +1,10 @@
+127.0.0.1 - - [08/Dec/2025 10:24:47] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:47] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:47] "GET /js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:47] "GET /css/style-minimal-update.css HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:48] "GET /js/modules/ui.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:48] "GET /js/firebase.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:48] "GET /js/modules/auth.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:48] "GET /js/modules/events.js HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:48] "GET /locales/pt.json HTTP/1.1" 200 -
+127.0.0.1 - - [08/Dec/2025 10:24:52] "GET /templates/products.html HTTP/1.1" 200 -
