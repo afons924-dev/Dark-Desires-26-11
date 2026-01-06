@@ -540,10 +540,10 @@ const app = {
         const url = window.location.hash.substring(1) || '/';
         const [path, query] = url.split('?');
 
-        // MAINTENANCE MODE: Force Coming Soon page if not logged in
-        // Allow access to admin routes or anything if logged in, but block guests.
-        // We assume that if this.user is set, they can see the site.
-        if (!this.user) {
+        // MAINTENANCE MODE: Force Coming Soon page if not logged in or not Admin
+        // Only allow access to admin users.
+        const isAdmin = this.userProfile && this.userProfile.isAdmin;
+        if (!this.user || !isAdmin) {
              const templateContent = await this.getTemplate('coming-soon');
              const root = document.getElementById('app-root');
              if (templateContent) {
@@ -699,10 +699,19 @@ const app = {
         let slideInterval;
 
         if (slides.length <= 1) {
-            if(slides.length === 1) slides[0].classList.replace('opacity-0', 'opacity-100');
+            if(slides.length === 1) {
+                slides[0].classList.remove('opacity-0');
+                slides[0].classList.add('opacity-100');
+            }
             if(prevBtn) prevBtn.style.display = 'none';
             if(nextBtn) nextBtn.style.display = 'none';
             return;
+        }
+
+        // Force first slide visible immediately to prevent black screen on load
+        if (slides.length > 0) {
+            slides[0].classList.remove('opacity-0');
+            slides[0].classList.add('opacity-100', 'z-10');
         }
 
         // Create indicators
