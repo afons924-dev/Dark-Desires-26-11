@@ -540,6 +540,20 @@ const app = {
         const url = window.location.hash.substring(1) || '/';
         const [path, query] = url.split('?');
 
+        // MAINTENANCE MODE: Force Coming Soon page if not logged in
+        // Allow access to admin routes or anything if logged in, but block guests.
+        // We assume that if this.user is set, they can see the site.
+        if (!this.user) {
+             const templateContent = await this.getTemplate('coming-soon');
+             const root = document.getElementById('app-root');
+             if (templateContent) {
+                 root.innerHTML = '';
+                 root.appendChild(templateContent.cloneNode(true));
+             }
+             this.hideLoading();
+             return;
+        }
+
         const protectedRoutes = ['/account']; // Removed '/checkout' to allow Guest Checkout
         const adminRoutes = ['/admin', '/admin-orders', '/admin-reviews'];
 
