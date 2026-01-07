@@ -161,30 +161,6 @@
 </div>
 </footer>
 <!-- Modals e Overlays -->
-<div aria-labelledby="search-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden flex-col items-center justify-start pt-32 p-4 transition-opacity duration-300 flex" id="search-overlay" role="dialog">
-<div class="relative w-full max-w-xl mx-auto bg-primary p-6 rounded-lg shadow-2xl border border-gray-700">
-<h2 class="sr-only" id="search-heading" data-i18n="searchModalTitle">Pesquisa de Produtos</h2>
-<label class="sr-only" for="search-input" data-i18n="searchInputLabel">Pesquisar produtos</label>
-<div class="relative w-full">
-<input class="w-full p-4 pr-12 rounded-md form-input text-lg" id="search-input" placeholder="Pesquisar produtos..." type="text" data-i18n-placeholder="searchInputPlaceholder"/>
-<button aria-label="Fechar pesquisa" class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 hover:text-white" id="close-search-btn" data-i18n-aria="searchClose"><i class="fas fa-times text-2xl"></i></button>
-<div id="search-suggestions" class="absolute w-full bg-primary mt-2 rounded-lg shadow-xl hidden overflow-hidden z-50 max-h-96 overflow-y-auto"></div>
-</div>
-</div>
-</div>
-<div aria-labelledby="preview-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[70] hidden items-center justify-center p-4 transition-opacity duration-300" id="preview-modal" role="dialog">
-<div class="bg-primary rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative grid grid-cols-1 md:grid-cols-2 gap-6" id="preview-content"></div>
-</div>
-<div aria-labelledby="options-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[70] hidden items-center justify-center p-4 transition-opacity duration-300" id="product-options-modal" role="dialog">
-    <div class="bg-primary rounded-lg shadow-xl w-11/12 max-w-md p-6 relative" id="product-options-content">
-        <button aria-label="Fechar" class="absolute top-4 right-4 text-gray-400 hover:text-white" id="close-product-options-modal"><i class="fas fa-times text-2xl"></i></button>
-        <h2 class="text-2xl font-bold text-white mb-4" id="options-heading">Escolha as Opções</h2>
-        <div id="options-form-container"></div>
-    </div>
-</div>
-<div aria-labelledby="admin-order-modal-title" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[70] hidden items-center justify-center p-4 transition-opacity duration-300" id="admin-order-detail-modal" role="dialog">
-<div class="bg-primary rounded-lg shadow-xl w-11/12 max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative" id="admin-order-detail-content"></div>
-</div>
 <div aria-atomic="true" aria-live="assertive" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden items-center justify-center" id="loading-overlay">
 <div class="loader" role="status"><span class="sr-only" data-i18n="loading">A carregar...</span></div>
 </div>
@@ -204,92 +180,8 @@
 </div>
 </div>
 </div>
-<div aria-labelledby="confirmation-title" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[160] hidden items-center justify-center p-4" id="confirmation-modal" role="dialog">
-<div class="bg-primary rounded-lg shadow-xl p-8 max-w-sm text-center">
-<h2 class="text-2xl font-bold text-white mb-4" id="confirmation-title" data-i18n="confirmationTitle">Tem a certeza?</h2>
-<p class="text-gray-300 mb-6" id="confirmation-message" data-i18n="confirmationMessage">Esta ação não pode ser desfeita.</p>
-<div class="flex justify-center gap-4">
-<button class="btn btn-danger" id="confirm-action-btn" data-i18n="confirmAction">Confirmar</button>
-<button class="btn btn-secondary" id="cancel-action-btn" data-i18n="cancelAction">Cancelar</button>
-</div>
-</div>
-</div>
-<div aria-hidden="true" class="fixed inset-0 bg-black bg-opacity-60 z-[80] hidden" id="cart-overlay"></div>
-<div aria-labelledby="cart-heading" aria-modal="true" class="fixed top-0 right-0 h-full w-full max-w-md bg-primary shadow-2xl z-[90] transform translate-x-full flex flex-col" id="cart-sidebar" role="dialog">
-<div class="flex items-center justify-between p-6 border-b border-gray-700">
-<h2 class="text-2xl font-bold" id="cart-heading" data-i18n="cartTitle">O seu Carrinho</h2>
-<button aria-label="Fechar carrinho" class="text-gray-400 hover:text-accent" id="close-cart-btn" data-i18n-aria="cartClose"><i class="fas fa-times text-2xl"></i></button>
-</div>
-<div class="flex-grow overflow-y-auto p-6" id="cart-sidebar-content"></div>
-<div class="p-6 border-t border-gray-700 bg-secondary" id="cart-sidebar-footer"></div>
-</div>
 <div aria-live="polite" id="toast-container" role="status"></div>
-<div aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[200] hidden items-center justify-center p-4 text-center" id="exit-intent-modal" role="dialog">
-<div class="bg-primary rounded-lg shadow-xl p-8 max-w-md relative transform transition-all scale-95 opacity-0">
-<button aria-label="Fechar" class="absolute top-2 right-3 text-gray-400 hover:text-white" id="close-exit-intent-modal"><i class="fas fa-times text-2xl"></i></button>
-<h2 class="text-4xl font-bold text-white mb-4" data-i18n="exitIntentTitle">Espere! Não vá já...</h2>
-<p class="text-gray-200 mb-6 text-lg" data-i18n-html="exitIntentMessage">Temos uma oferta especial para si. Use o cupão abaixo para ter <span class="text-accent font-bold">5% de desconto</span> na sua compra.</p>
-<div class="border-2 border-dashed border-accent bg-secondary p-4 rounded-lg mb-6"><span class="text-2xl font-bold tracking-widest">PRAZER5</span></div>
-<button class="btn btn-primary w-full" id="copy-coupon-btn" data-i18n="exitIntentButton">Copiar Cupão e Continuar</button>
-</div>
-</div>
-<div id="cookie-consent-banner">
-<p class="text-sm flex-grow" data-i18n-html="cookieBannerMessage">Este site utiliza cookies para garantir que obtém a melhor experiência. Ao continuar a navegar, concorda com a nossa <a class="font-bold underline hover:text-accent" href="#/privacy">Política de Privacidade</a>.</p>
-<div class="flex gap-2">
-<button class="btn btn-primary !py-2 !px-4 !text-sm" id="cookie-accept-btn" data-i18n="cookieAccept">Aceitar</button>
-<button class="btn btn-secondary !py-2 !px-4 !text-sm" id="cookie-decline-btn" data-i18n="cookieDecline">Recusar</button>
-</div>
-</div>
-
 <div id="bundle-modal-container"></div>
-
-<!-- Notify Me Modal -->
-<div aria-labelledby="notify-me-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[150] hidden items-center justify-center p-4" id="notify-me-modal" role="dialog">
-    <div class="bg-primary rounded-lg shadow-xl p-8 max-w-md w-full relative">
-        <button aria-label="Fechar" class="absolute top-2 right-3 text-gray-400 hover:text-white" id="close-notify-me-modal"><i class="fas fa-times text-2xl"></i></button>
-        <h2 class="text-2xl font-bold text-white mb-4" id="notify-me-heading">Notificar-me</h2>
-        <p class="text-gray-300 mb-6">Será notificado por email assim que este produto estiver novamente disponível.</p>
-        <div id="notify-me-content">
-            <!-- Content will be injected here by JavaScript -->
-        </div>
-    </div>
-</div>
-
-<div class="fixed inset-0 bg-black bg-opacity-80 z-[300] hidden flex items-center justify-center p-4 text-center" id="first-visit-popup">
-<div class="bg-primary rounded-lg shadow-xl p-8 max-w-md">
-<h2 class="text-3xl font-bold text-white mb-4" data-i18n="firstVisitTitle">Bem-vindo à Desire!</h2>
-<p class="text-gray-300 mb-6" data-i18n-html="firstVisitMessage">Use o cupão abaixo e ganhe <span class="text-accent font-bold">10% de desconto</span> na sua primeira compra.</p>
-<div class="border-2 border-dashed border-accent bg-secondary p-4 rounded-lg mb-6">
-<span class="text-2xl font-bold tracking-widest">BEMVINDO10</span>
-</div>
-<button class="btn btn-primary w-full" id="close-welcome-popup-btn" data-i18n="firstVisitButton">Aproveitar Oferta</button>
-</div>
-</div>
-
-<!-- Flash Sale Modal -->
-<div aria-labelledby="flash-sale-heading" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-80 z-[150] hidden items-center justify-center p-4" id="flash-sale-modal" role="dialog">
-    <div class="bg-primary rounded-lg shadow-xl p-8 max-w-md w-full">
-        <h2 class="text-2xl font-bold text-white mb-4" id="flash-sale-heading" data-i18n="flashSaleModalTitle">Configurar Promoção Relâmpago</h2>
-        <form id="flash-sale-form" novalidate="">
-            <input type="hidden" id="flash-sale-product-id">
-            <div class="mb-4">
-                <label class="block text-gray-300 mb-2" for="flash-sale-discount" data-i18n="flashSaleDiscountLabel">Desconto (%)</label>
-                <input class="w-full p-3 rounded-md form-input" id="flash-sale-discount" name="discount" required type="number" min="1" max="99" placeholder="Ex: 20" data-i18n-placeholder="flashSaleDiscountPlaceholder">
-                <p class="error-message" data-i18n="flashSaleDiscountError">Insira um desconto válido (1-99).</p>
-            </div>
-            <div class="mb-6">
-                <label class="block text-gray-300 mb-2" for="flash-sale-duration" data-i18n="flashSaleDurationLabel">Duração (horas)</label>
-                <input class="w-full p-3 rounded-md form-input" id="flash-sale-duration" name="duration" required type="number" min="1" placeholder="Ex: 24" data-i18n-placeholder="flashSaleDurationPlaceholder">
-                <p class="error-message" data-i18n="flashSaleDurationError">Insira uma duração válida.</p>
-            </div>
-            <div class="flex justify-end gap-4">
-                <button class="btn btn-secondary" id="cancel-flash-sale-btn" type="button" data-i18n="flashSaleCancel">Cancelar</button>
-                <button class="btn btn-primary" type="submit" data-i18n="flashSaleSave">Guardar Promoção</button>
-            </div>
-             <button class="btn btn-danger w-full mt-4" id="remove-flash-sale-btn" type="button" data-i18n="flashSaleRemove">Remover Promoção Atual</button>
-        </form>
-    </div>
-</div>
 
 <!-- Mobile Bottom Navigation -->
 <nav id="bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-primary/90 backdrop-blur-lg border-t border-gray-800 z-50 flex justify-around items-center pb-safe pt-2 px-2 h-[calc(60px+env(safe-area-inset-bottom))] transition-transform duration-300">

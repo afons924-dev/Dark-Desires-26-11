@@ -54,10 +54,10 @@ service cloud.firestore {
         (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false);
 
       // Update: Allow if user is owner or admin.
-      // If owner, prevent changing 'isAdmin' field or setting it to true if not already.
+      // If owner, strictly prevent changing 'isAdmin' or 'loyaltyPoints' fields.
       allow update: if isAdmin() || (
         isOwner(userId) &&
-        (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == resource.data.isAdmin)
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'loyaltyPoints']))
       );
     }
 

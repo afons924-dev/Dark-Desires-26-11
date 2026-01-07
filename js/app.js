@@ -554,6 +554,9 @@ const app = {
              return;
         }
 
+        // Load sensitive/app-specific modals only if authorized
+        await this.loadRestrictedModals();
+
         const protectedRoutes = ['/account']; // Removed '/checkout' to allow Guest Checkout
         const adminRoutes = ['/admin', '/admin-orders', '/admin-reviews'];
 
@@ -4712,6 +4715,24 @@ const app = {
         document.querySelector('meta[property="twitter:title"]').setAttribute('content', title);
         document.querySelector('meta[property="twitter:description"]').setAttribute('content', description);
         if (imageUrl) document.querySelector('meta[property="twitter:image"]').setAttribute('content', imageUrl);
+    },
+
+    async loadRestrictedModals() {
+        if (this.modalsLoaded) return;
+        const response = await fetch('templates/modals.html');
+        if (response.ok) {
+            const text = await response.text();
+            const div = document.createElement('div');
+            div.innerHTML = text;
+            while (div.firstChild) {
+                document.body.appendChild(div.firstChild);
+            }
+            this.modalsLoaded = true;
+            // Re-initialize event listeners for these modals if necessary
+            // Note: Delegation in addEventListeners handles most clicks, but some specific inits might be needed
+            this.initCookieConsent();
+            this.initExitIntentPopup();
+        }
     },
 
     updateMetaTagsForPage(path, params) {
