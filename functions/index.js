@@ -798,6 +798,46 @@ exports.onProductStockUpdate = onDocumentUpdated(
 );
 
 /**
+ * Sends a welcome email to the user and a notification to the admin when a new newsletter subscription is created.
+ */
+exports.onNewsletterSubscription = onDocumentCreated(
+    { region: "europe-west3", document: "newsletter_subscriptions/{subscriptionId}", secrets: ["EMAIL_USER", "EMAIL_PASS"] },
+    async (event) => {
+        const data = event.data.data();
+        const email = data.email;
+
+        if (!email) {
+            logger.warn(`No email found for subscription ${event.params.subscriptionId}, skipping notification.`);
+            return;
+        }
+
+        const transporter = getTransporter();
+        const adminEmail = process.env.ADMIN_EMAIL || 'darkdesire389@gmail.com';
+
+        const welcomeMailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Bem-vindo à Desire!',
+            html: `<p>Obrigado por subscrever a nossa newsletter!</p><p>Fique atento às nossas novidades e ofertas exclusivas.</p>`
+        };
+
+        const adminMailOptions = {
+            from: process.env.EMAIL_USER,
+            to: adminEmail,
+            subject: 'Nova Subscrição na Newsletter',
+            html: `<p>Um novo utilizador subscreveu a newsletter:</p><p><strong>Email:</strong> ${email}</p>`
+        };
+
+        await Promise.all([
+            transporter.sendMail(welcomeMailOptions),
+            transporter.sendMail(adminMailOptions)
+        ]);
+
+        logger.info(`Sent newsletter welcome and admin notification for ${email}`);
+    }
+);
+
+/**
  * Sends an email to the admin when a new contact message is created.
  */
 exports.onContactMessageCreated = onDocumentCreated(
