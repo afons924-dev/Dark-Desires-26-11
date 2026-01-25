@@ -9,12 +9,10 @@ import { getFirebaseErrorMessage, logout } from './modules/auth.js';
 import { on } from './modules/events.js';
 const importAliExpressProduct = httpsCallable(functions, "importAliExpressProduct");
 
-// TODO: Lançamento: Substitua esta chave pela sua chave do site reCAPTCHA de produção
-const RECAPTCHA_SITE_KEY = '6LeJXJIrAAAAAMh4x_AG8ZJH_RmdIJ50MICzriCi';
-// TODO: Lançamento: Substitua este ID pelo seu ID de acompanhamento do Google Analytics de produção
-const GOOGLE_ANALYTICS_ID = 'G-2NSFKWXG77';
-// TODO: Lançamento: Substitua esta chave pela sua chave pública do Stripe de produção e considere movê-la para uma variável de ambiente
-const STRIPE_PUBLIC_KEY = 'pk_test_51RyHuf42pRHAcenNzc5G5jckCpZFPtsHSLhBpM2QmwXRfnikV2FuEhqwEN18GPmd3V81yNyypdnGHaPh3uV1au1p002LQ5jyFk';
+// Keys loaded from window.env (see js/config.js) or fallback to placeholders
+const RECAPTCHA_SITE_KEY = (window.env && window.env.RECAPTCHA_SITE_KEY) || '6LeJXJIrAAAAAMh4x_AG8ZJH_RmdIJ50MICzriCi';
+const GOOGLE_ANALYTICS_ID = (window.env && window.env.GOOGLE_ANALYTICS_ID) || 'G-2NSFKWXG77';
+const STRIPE_PUBLIC_KEY = (window.env && window.env.STRIPE_PUBLIC_KEY) || 'pk_test_51RyHuf42pRHAcenNzc5G5jckCpZFPtsHSLhBpM2QmwXRfnikV2FuEhqwEN18GPmd3V81yNyypdnGHaPh3uV1au1p002LQ5jyFk';
 
 
 function startCountdown(endTime, elementId) {

@@ -1,5 +1,6 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const axios = require("axios");
@@ -8,11 +9,22 @@ const https = require('https');
 const querystring = require('querystring');
 const renderer = require("./renderer");
 const Stripe = require("stripe");
+const nodemailer = require("nodemailer");
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
 renderer && renderer.init && renderer.init(db);
+
+const getTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+};
 
 // Define allowed origins for CORS
 const corsOptions = {
@@ -731,3 +743,110 @@ exports.sitemap = onRequest({ region: "europe-west3" }, async (req, res) => {
  * Server-side rendering function.
  */
 exports.ssr = onRequest({ region: "europe-west3" }, renderer.render);
+
+/**
+ * Monitors product stock changes. If stock becomes positive, sends notification emails.
+ */
+exports.onProductStockUpdate = onDocumentUpdated(
+    { region: "europe-west3", document: "products/{productId}", secrets: ["EMAIL_USER", "EMAIL_PASS"] },
+    async (event) => {
+        const before = event.data.before.data();
+        const after = event.data.after.data();
+
+        // Check if stock increased from <= 0 to > 0
+        if (before.stock <= 0 && after.stock > 0) {
+            const productId = event.params.productId;
+            const productName = after.name;
+
+            // Query pending notifications
+            const notificationsRef = db.collection('notifications');
+            const snapshot = await notificationsRef
+                .where('productId', '==', productId)
+                .where('status', '==', 'pending')
+                .get();
+
+            if (snapshot.empty) {
+                return;
+            }
+
+            const transporter = getTransporter();
+
+            const emailPromises = [];
+            const updatePromises = [];
+
+            const baseUrl = process.env.BASE_URL || 'https://desire.pt';
+
+            snapshot.forEach(doc => {
+                const notification = doc.data();
+                const email = notification.email;
+
+                const mailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: email,
+                    subject: 'O produto chegou! - Desire',
+                    html: `<p>Olá,</p><p>O produto <strong>${productName}</strong> que você estava esperando já está disponível!</p><p><a href="${baseUrl}/#/product-detail?id=${productId}">Clique aqui para comprar agora</a></p>`
+                };
+
+                emailPromises.push(transporter.sendMail(mailOptions));
+                updatePromises.push(doc.ref.update({ status: 'sent', sentAt: admin.firestore.FieldValue.serverTimestamp() }));
+            });
+
+            await Promise.all([...emailPromises, ...updatePromises]);
+            logger.info(`Sent back-in-stock notifications for product ${productId} to ${snapshot.size} users.`);
+        }
+    }
+);
+
+/**
+ * Sends an email to the admin when a new contact message is created.
+ */
+exports.onContactMessageCreated = onDocumentCreated(
+    { region: "europe-west3", document: "contact_messages/{messageId}", secrets: ["EMAIL_USER", "EMAIL_PASS"] },
+    async (event) => {
+        const data = event.data.data();
+
+        const transporter = getTransporter();
+        const adminEmail = process.env.ADMIN_EMAIL || 'darkdesire389@gmail.com';
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: adminEmail,
+            subject: `Nova mensagem de contacto: ${data.name}`,
+            html: `<p><strong>Nome:</strong> ${data.name}</p><p><strong>Email:</strong> ${data.email}</p><p><strong>Mensagem:</strong><br>${data.message}</p>`
+        };
+
+        await transporter.sendMail(mailOptions);
+        logger.info(`Sent contact message notification for message ${event.params.messageId}`);
+    }
+);
+
+/**
+ * Sends an email to the customer when their order status is updated.
+ */
+exports.onOrderStatusUpdate = onDocumentUpdated(
+    { region: "europe-west3", document: "orders/{orderId}", secrets: ["EMAIL_USER", "EMAIL_PASS"] },
+    async (event) => {
+        const before = event.data.before.data();
+        const after = event.data.after.data();
+
+        if (before.status !== after.status) {
+            const email = after.shippingAddress?.email;
+            if (!email) {
+                logger.warn(`No email found for order ${event.params.orderId}, skipping notification.`);
+                return;
+            }
+
+            const transporter = getTransporter();
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: `Atualização da Encomenda #${event.params.orderId}`,
+                html: `<p>Olá ${after.shippingAddress.firstName},</p><p>O estado da sua encomenda #${event.params.orderId} mudou para: <strong>${after.status}</strong>.</p>`
+            };
+
+            await transporter.sendMail(mailOptions);
+            logger.info(`Sent order status update email for order ${event.params.orderId} to ${email}`);
+        }
+    }
+);
