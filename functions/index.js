@@ -86,6 +86,15 @@ exports.createStripePaymentIntent = onCall(
         const productDoc = await productRef.get();
         if (productDoc.exists) {
           const pData = productDoc.data();
+
+          // STOCK VALIDATION
+          if (pData.stock < item.quantity) {
+             throw new HttpsError(
+                 "failed-precondition",
+                 `Stock insuficiente para o produto "${pData.name}". Disponível: ${pData.stock}, Solicitado: ${item.quantity}`
+             );
+          }
+
           let itemPrice = pData.price;
 
           // Check for Bundle Discount (Basic implementation: trust client structure implies bundle usage, or check DB)

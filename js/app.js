@@ -3187,7 +3187,10 @@ const app = {
         if (!this.user) return;
         try {
             const cleanCart = JSON.parse(JSON.stringify(this.cart));
-            await setDoc(doc(this.db, "users", this.user.uid), { cart: cleanCart }, { merge: true });
+            await setDoc(doc(this.db, "users", this.user.uid), {
+                cart: cleanCart,
+                cartUpdatedAt: serverTimestamp()
+            }, { merge: true });
         } catch (error) { this.showToast('Não foi possível guardar o carrinho.', 'error'); }
     },
 

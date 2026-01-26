@@ -87,11 +87,14 @@ async function renderProductPage($, product) {
 
     $('#app-root').html(renderedProduct);
 
+    // Ensure image falls back to a safe default if missing
+    const ogImage = (product.images && product.images.length > 0) ? product.images[0] : (product.image || 'https://desire.pt/img/og-default.jpg');
+
     renderMeta($, {
         title: `${product.name} | Desire`,
-        description: product.description.substring(0, 160),
+        description: product.description ? product.description.substring(0, 160).replace(/\n/g, ' ') + '...' : 'Confira este produto exclusivo na Desire.',
         canonical: `https://desire.pt/product-detail?id=${product.id}`,
-        image: (product.images && product.images[0]) || product.image
+        image: ogImage
     });
 }
 
