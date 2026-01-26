@@ -300,19 +300,23 @@ const app = {
         if (consent === 'true') {
             this.initializeAnalytics();
         } else if (!consent) {
-            banner.style.display = 'flex';
+            if (banner) banner.style.display = 'flex';
         }
 
-        acceptBtn.addEventListener('click', () => {
-            localStorage.setItem('cookie_consent', 'true');
-            banner.style.display = 'none';
-            this.initializeAnalytics();
-        });
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', () => {
+                localStorage.setItem('cookie_consent', 'true');
+                if (banner) banner.style.display = 'none';
+                this.initializeAnalytics();
+            });
+        }
 
-        declineBtn.addEventListener('click', () => {
-            localStorage.setItem('cookie_consent', 'false');
-            banner.style.display = 'none';
-        });
+        if (declineBtn) {
+            declineBtn.addEventListener('click', () => {
+                localStorage.setItem('cookie_consent', 'false');
+                if (banner) banner.style.display = 'none';
+            });
+        }
     },
 
     initializeAnalytics() {
