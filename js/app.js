@@ -3506,10 +3506,22 @@ const app = {
             const closeBtn = document.getElementById('close-cart-btn');
             const overlay = document.getElementById('cart-overlay');
             const sidebar = document.getElementById('cart-sidebar');
+
+        if (cartIcon) {
             cartIcon.addEventListener('click', (e) => { e.preventDefault(); this.openCartSidebar(); });
+        }
+
+        if (closeBtn) {
             closeBtn.addEventListener('click', () => this.closeCartSidebar());
+        }
+
+        if (overlay) {
             overlay.addEventListener('click', () => this.closeCartSidebar());
+        }
+
+        if (sidebar) {
             sidebar.addEventListener('click', (e) => { const target = e.target.closest('a'); if(target && (target.href.includes('#/cart') || target.href.includes('#/checkout'))) this.closeCartSidebar(); });
+        }
         },
 
         openCartSidebar() {
@@ -4736,6 +4748,7 @@ const app = {
             // Re-initialize event listeners for these modals if necessary
             // Note: Delegation in addEventListeners handles most clicks, but some specific inits might be needed
             this.initCookieConsent();
+            this.initCartSidebar(); // Re-bind cart sidebar listeners now that elements are in DOM
             this.initExitIntentPopup();
         }
     },
