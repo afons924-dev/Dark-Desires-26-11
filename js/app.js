@@ -4705,6 +4705,9 @@ const app = {
         const modal = document.getElementById("exit-intent-modal");
         const closeModalBtn = document.getElementById("close-exit-intent-modal");
         const copyCouponBtn = document.getElementById("copy-coupon-btn");
+
+        if (!modal) return; // Exit if elements are not yet loaded
+
         const showModal = () => {
             if (this.exitIntentShown) return;
             modal.classList.remove("hidden"); modal.classList.add("flex");
@@ -4716,9 +4719,15 @@ const app = {
             content.classList.remove("opacity-100", "scale-100");
             setTimeout(() => { modal.classList.add("hidden"); modal.classList.remove("flex"); }, 300);
         };
-        document.addEventListener("mouseleave", (e) => { if (!sessionStorage.getItem('exitIntentShown') && e.clientY < 50 && this.cart.length > 0) showModal(); });
-        closeModalBtn.addEventListener("click", hideModal);
-        copyCouponBtn.addEventListener("click", () => { navigator.clipboard.writeText("PRAZER5").then(() => { this.showToast("Cupão 'PRAZER5' copiado!"); hideModal(); }); });
+
+        // Ensure we don't add multiple mouseleave listeners if this function is called multiple times
+        if (!this.exitIntentListenerAdded) {
+             document.addEventListener("mouseleave", (e) => { if (modal && !sessionStorage.getItem('exitIntentShown') && e.clientY < 50 && this.cart.length > 0) showModal(); });
+             this.exitIntentListenerAdded = true;
+        }
+
+        if (closeModalBtn) closeModalBtn.addEventListener("click", hideModal);
+        if (copyCouponBtn) copyCouponBtn.addEventListener("click", () => { navigator.clipboard.writeText("PRAZER5").then(() => { this.showToast("Cupão 'PRAZER5' copiado!"); hideModal(); }); });
     },
 
     updateMetaTags(title, description, imageUrl) {
