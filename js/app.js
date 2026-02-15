@@ -871,7 +871,6 @@ const app = {
                         <div class="bg-primary p-8 rounded-lg text-center h-full flex flex-col justify-center">
                             <p class="text-gray-300 italic mb-6">"${quote}"</p>
                             <div class="flex items-center justify-center">
-                                <img src="${avatar}" alt="Avatar de ${author}" class="w-12 h-12 rounded-full mr-4" loading="lazy">
                                 <span class="font-bold text-white">${author}</span>
                             </div>
                         </div>
@@ -899,7 +898,6 @@ const app = {
                 <div class="bg-primary p-8 rounded-lg text-center h-full flex flex-col justify-center">
                     <p class="text-gray-300 italic mb-6">"${t.quote}"</p>
                     <div class="flex items-center justify-center">
-                        <img src="${t.avatar}" alt="Avatar de ${t.author}" class="w-12 h-12 rounded-full mr-4" loading="lazy">
                         <span class="font-bold text-white">${t.author}</span>
                     </div>
                 </div>
@@ -2172,6 +2170,7 @@ const app = {
             description: getValue('description'),
             price: getNumber('price'),
             category: getValue('category').toLowerCase(),
+            subcategory: getValue('subcategory'),
             stock: getInt('stock'),
             brand: getValue('brand'),
             colors: (getValue('colors') || '').split(',').map(c => c.trim()).filter(c => c),
@@ -2223,6 +2222,7 @@ const app = {
         form.description.value = product.description || '';
         form.price.value = product.price || 0;
         form.category.value = product.category || '';
+        if (form.subcategory) form.subcategory.value = product.subcategory || '';
         form.stock.value = product.stock || 0;
         form.brand.value = product.brand || '';
         if (form.colors) form.colors.value = (product.colors || (product.color ? [product.color] : [])).join(', ');
@@ -3138,7 +3138,16 @@ const app = {
         this.showLoading();
         try {
             await this.getRecaptchaToken('register');
-            const userCredential = await createUserWithEmailAndPassword(this.auth, form.email.value, form.password.value);
+
+            // Sentinel Security Fix: Normalize email to prevent dot-stuffing bypass
+            let email = form.email.value.trim().toLowerCase();
+            if (email.endsWith('@gmail.com') || email.endsWith('@googlemail.com')) {
+                const parts = email.split('@');
+                parts[0] = parts[0].replace(/\./g, '');
+                email = parts.join('@');
+            }
+
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, form.password.value);
             const newUserProfile = { email: userCredential.user.email, isAdmin: false, cart: [], loyaltyPoints: 0, wishlist: [] };
             await setDoc(doc(this.db, "users", userCredential.user.uid), newUserProfile);
             this.userProfile = newUserProfile;
@@ -3756,7 +3765,41 @@ const app = {
 
         renderCheckboxFilter('brand', 'brand-filter-list');
         renderCheckboxFilter('color', 'color-filter-list');
-        renderCheckboxFilter('material', 'material-filter-list');
+        // renderCheckboxFilter('material', 'material-filter-list');
+
+        // Material Filter as Dropdown (Sentinel Update)
+        const renderMaterialSelect = () => {
+            const container = document.getElementById('material-filter-list');
+            if (!container) return;
+            const options = [...new Set(this.products.flatMap(p => {
+                const val = p.material;
+                if (!val || val === 'N/A') return [];
+                if (Array.isArray(val)) return val;
+                return val.split(/[+,]/).map(s => s.trim()).filter(s => s);
+            }))].sort();
+
+            const currentVal = params.get('material') || '';
+            this.filters.material = currentVal ? [currentVal] : [];
+
+            if (options.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-500">N/A</p>';
+                return;
+            }
+
+            let html = `<select id="material-select" class="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 focus:ring-accent"><option value="">Todos</option>`;
+            options.forEach(opt => {
+                html += `<option value="${opt}" ${currentVal === opt ? 'selected' : ''}>${opt}</option>`;
+            });
+            html += `</select>`;
+            container.innerHTML = html;
+
+            document.getElementById('material-select').addEventListener('change', (e) => {
+                const val = e.target.value;
+                this.filters.material = val ? [val] : [];
+                this.applyFilters();
+            });
+        };
+        renderMaterialSelect();
 
         // --- Price Slider ---
         const prices = this.products.map(p => p.price);
