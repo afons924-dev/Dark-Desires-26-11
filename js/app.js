@@ -4467,7 +4467,6 @@ const app = {
                 discount: this.discount, // Send discount info for server-side validation
                 userId: this.user ? this.user.uid : null // Send null if guest
             };
-            console.log("DEBUG: Calling 'createStripePaymentIntent' with payload:", JSON.stringify(payload, null, 2));
 
             const result = await createStripePaymentIntent(payload);
             const data = result.data;
@@ -4498,8 +4497,7 @@ const app = {
             paymentElement.mount("#payment-element");
 
         } catch (error) {
-            console.error("--- DEBUG: Stripe Payment Initialization FAILED ---");
-            console.error("Error object:", error);
+            console.error("Error initializing Stripe payment:", error);
             this.showToast(`Erro ao iniciar pagamento: ${error.message}`, 'error');
         } finally {
             this.hideLoading();
@@ -4531,9 +4529,7 @@ const app = {
         // This point will only be reached if there is an immediate error.
         // If the payment requires a redirect, the user will be sent away from the page.
         if (error) {
-            console.error("--- DEBUG: Stripe confirmPayment FAILED ---");
-            console.error("Error Type:", error.type);
-            console.error("Error Message:", error.message);
+            console.error("Stripe confirmPayment failed:", error);
             const messageContainer = document.querySelector("#payment-message");
             messageContainer.textContent = `Erro no pagamento: ${error.message}`;
             messageContainer.classList.remove('hidden');
@@ -4559,15 +4555,12 @@ const app = {
         }
 
         try {
-            console.log("--- DEBUG: Handling post-payment redirect. ---");
             const { paymentIntent, error } = await this.stripe.retrievePaymentIntent(clientSecret);
 
             if (error) {
-                console.error("--- DEBUG: Error retrieving Payment Intent ---", error);
+                console.error("Error retrieving Payment Intent:", error);
                 throw new Error(error.message);
             }
-
-            console.log(`--- DEBUG: Retrieved Payment Intent. Status: ${paymentIntent.status} ---`);
 
             switch (paymentIntent.status) {
                 case "succeeded":
@@ -4585,7 +4578,6 @@ const app = {
 
                     // IMPORTANT: Force a reload of user profile and orders before redirecting
                     // to ensure the new order is visible immediately.
-                    console.log("--- DEBUG: Payment succeeded. Reloading user profile and orders before redirect. ---");
                     await this.loadUserProfile();
                     await this.loadOrders();
 
@@ -4601,13 +4593,13 @@ const app = {
                     this.navigateTo('/checkout'); // Send back to checkout
                     break;
                 default:
-                    console.warn(`--- DEBUG: Unhandled payment intent status: ${paymentIntent.status} ---`);
+                    console.warn(`Unhandled payment intent status: ${paymentIntent.status}`);
                     this.showToast("Algo correu mal com o pagamento. Por favor, tente novamente.", "error");
                     this.navigateTo('/checkout'); // Send back to checkout
                     break;
             }
         } catch (error) {
-            console.error("--- DEBUG: Catastrophic failure in handlePostPayment ---", error);
+            console.error("Error in handlePostPayment:", error);
             this.showToast(`Não foi possível verificar o seu pagamento: ${error.message}`, "error");
         } finally {
             this.hideLoading();
