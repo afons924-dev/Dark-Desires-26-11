@@ -1,31 +1,40 @@
 <!-- Hero Carousel -->
-<section id="hero-carousel-section" class="relative h-[90vh] overflow-hidden bg-primary">
+<section id="hero-carousel-section" class="relative h-[60vh] md:h-[90vh] overflow-hidden bg-primary">
     <div id="hero-carousel" class="relative w-full h-full">
-        <!-- Slide 1: 5% Discount -->
+        <!-- Slide 1: 5% Discount (Using slide2 keys) -->
         <div class="hero-slide absolute w-full h-full transition-opacity duration-1000 ease-in-out opacity-0" data-slide-index="0">
-            <div class="absolute inset-0 bg-primary"></div>
-            <div class="relative z-10 container mx-auto px-4 h-full flex items-center justify-center bg-cover bg-center" style="background-image: url('https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/5Perc.png?alt=media');">
-                <div class="max-w-xl text-center mt-auto mb-16 md:mb-24">
-                    <a class="btn btn-primary text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products" data-i18n="slide1Button">Ver Coleção</a>
+            <div class="absolute inset-0 bg-black/40 z-10"></div>
+            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/5Perc.png?alt=media" alt="5% Desconto" class="absolute inset-0 w-full h-full object-cover">
+            <div class="relative z-20 container mx-auto px-4 h-full flex items-center justify-center text-center">
+                <div class="max-w-2xl text-white mt-auto mb-16 md:mb-24">
+                    <h1 class="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg" data-i18n="slide2Title">5% OFF com Cupão</h1>
+                    <p class="text-xl md:text-2xl mb-8 drop-shadow-lg" data-i18n-html="slide2Subtitle">Use o código <span class="font-bold text-accent">PRAZER5</span> no checkout.</p>
+                    <a class="btn btn-primary text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products" data-i18n="slide2Button">Ver Coleção</a>
                 </div>
             </div>
         </div>
 
-        <!-- Slide 2: Luxury -->
+        <!-- Slide 2: Luxury (Using slide1 keys) -->
         <div class="hero-slide absolute w-full h-full transition-opacity duration-1000 ease-in-out opacity-0" data-slide-index="1">
-            <div class="absolute inset-0 bg-primary"></div>
-            <div class="relative z-10 container mx-auto px-4 h-full flex items-center justify-center bg-cover bg-center" style="background-image: url('https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Luxo.png?alt=media');">
-                <div class="max-w-xl text-center mt-auto mb-16 md:mb-24">
-                    <a class="btn btn-accent text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products?category=luxo" data-i18n="slide2Button">Explorar</a>
+            <div class="absolute inset-0 bg-black/30 z-10"></div>
+            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Luxo.png?alt=media" alt="Luxo" class="absolute inset-0 w-full h-full object-cover">
+            <div class="relative z-20 container mx-auto px-4 h-full flex items-center justify-center text-center">
+                <div class="max-w-2xl text-white mt-auto mb-16 md:mb-24">
+                    <h1 class="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg" data-i18n="slide1Title">Coleção de Luxo</h1>
+                    <p class="text-xl md:text-2xl mb-8 drop-shadow-lg" data-i18n="slide1Subtitle">Designs requintados para o seu prazer.</p>
+                    <a class="btn btn-accent text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products?category=luxo" data-i18n="slide1Button">Descobrir</a>
                 </div>
             </div>
         </div>
 
-        <!-- Slide 3: New Arrivals -->
+        <!-- Slide 3: New Arrivals (Using slide3 keys) -->
         <div class="hero-slide absolute w-full h-full transition-opacity duration-1000 ease-in-out opacity-0" data-slide-index="2">
-            <div class="absolute inset-0 bg-primary"></div>
-            <div class="relative z-10 container mx-auto px-4 h-full flex items-center justify-center bg-cover bg-center" style="background-image: url('https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Novidade_na_area.png?alt=media');">
-                <div class="max-w-xl text-center mt-auto mb-16 md:mb-24">
+            <div class="absolute inset-0 bg-black/30 z-10"></div>
+            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Novidade_na_area.png?alt=media" alt="Novidades" class="absolute inset-0 w-full h-full object-cover">
+            <div class="relative z-20 container mx-auto px-4 h-full flex items-center justify-center text-center">
+                <div class="max-w-2xl text-white mt-auto mb-16 md:mb-24">
+                    <h1 class="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg" data-i18n="slide3Title">Novidades Para Casais</h1>
+                    <p class="text-xl md:text-2xl mb-8 drop-shadow-lg" data-i18n="slide3Subtitle">Explore novas dimensões de intimidade.</p>
                     <a class="btn btn-primary text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products?sort=newest" data-i18n="slide3Button">Ver Novidades</a>
                 </div>
             </div>
