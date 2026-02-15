@@ -545,7 +545,8 @@ const app = {
         // MAINTENANCE MODE: Force Coming Soon page if not logged in or not Admin
         // Only allow access to admin users.
         const isAdmin = this.userProfile && this.userProfile.isAdmin;
-        if (!this.user || !isAdmin) {
+        // Maintenance mode disabled
+        if (false && !isAdmin && window.location.pathname !== '/templates/coming-soon.html') {
              const templateContent = await this.getTemplate('coming-soon');
              const root = document.getElementById('app-root');
              if (templateContent) {
@@ -1041,7 +1042,7 @@ const app = {
             const mainImage = imageList[0];
 
             const addToCartButtonDetail = isOutOfStock
-                ? `<button class="w-full btn btn-accent flex items-center justify-center gap-2 notify-me-btn" data-id="${product.id}">
+                ? `<button class="w-full btn btn-primary flex items-center justify-center gap-2 notify-me-btn" data-id="${product.id}">
                        <i class="fas fa-bell"></i> Notificar-me Quando Disponível
                    </button>`
                 : `<button data-id="${product.id}" class="add-to-cart-btn w-full btn btn-primary flex items-center justify-center gap-2">

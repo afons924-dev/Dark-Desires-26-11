@@ -23,7 +23,7 @@ export function renderProductCard(product, isProductInWishlist) {
         : `<button class="btn btn-primary !p-3 add-to-cart-btn" data-id="${product.id}" aria-label="Adicionar ${product.name} ao carrinho"><i class="fas fa-shopping-cart text-lg"></i></button>`;
 
     const quickViewButton = isOutOfStock
-        ? `<button class="w-full btn btn-accent text-sm notify-me-btn" data-id="${product.id}"><i class="fas fa-bell mr-2"></i> Notificar-me</button>`
+        ? `<button class="w-full btn btn-primary text-sm notify-me-btn" data-id="${product.id}"><i class="fas fa-bell mr-2"></i> Notificar-me</button>`
         : `<button class="w-full btn btn-secondary text-sm quick-view-btn" data-id="${product.id}">Vista Rápida ${urgencyMessage}</button>`;
 
     return `
