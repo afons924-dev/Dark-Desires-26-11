@@ -80,6 +80,8 @@ const app = {
     exitIntentShown: false,
     adminImageFiles: [], // Stores new File objects for upload
     adminExistingImages: [], // Stores existing image URLs for the product being edited
+    testimonialsCache: null, // Caching testimonials
+    flashSaleCache: null, // Caching flash sale data
     translations: {},
     filters: { category: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] },
     filteredProducts: [],
@@ -848,40 +850,46 @@ const app = {
         const container = document.getElementById('testimonials-container');
         if (!container) return;
 
-        try {
-            const q = query(
-                collection(this.db, "product_ratings"),
-                where("status", "==", "approved"),
-                where("score", ">=", 4),
-                orderBy("createdAt", "desc"),
-                limit(9) // Load more for the carousel
-            );
-            const querySnapshot = await getDocs(q);
-            const reviews = querySnapshot.docs.map(doc => doc.data());
+        let reviews = this.testimonialsCache;
 
-            if (reviews.length > 2) { // Need at least 3 for a carousel to make sense
-                container.innerHTML = reviews.map(review => {
-                    const author = review.userName || 'Anónimo';
-                    const avatarId = author.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    const avatar = `https://i.pravatar.cc/150?u=${avatarId}`;
-                    const quote = review.comment || 'Excelente produto! Recomendo vivamente.';
-
-                    return `
-                    <div class="snap-start shrink-0 w-full md:w-1/3 p-4">
-                        <div class="bg-primary p-8 rounded-lg text-center h-full flex flex-col justify-center">
-                            <p class="text-gray-300 italic mb-6">"${quote}"</p>
-                            <div class="flex items-center justify-center">
-                                <img src="${avatar}" alt="Avatar de ${author}" class="w-12 h-12 rounded-full mr-4" loading="lazy">
-                                <span class="font-bold text-white">${author}</span>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-            } else {
+        if (!reviews) {
+            try {
+                const q = query(
+                    collection(this.db, "product_ratings"),
+                    where("status", "==", "approved"),
+                    where("score", ">=", 4),
+                    orderBy("createdAt", "desc"),
+                    limit(9) // Load more for the carousel
+                );
+                const querySnapshot = await getDocs(q);
+                reviews = querySnapshot.docs.map(doc => doc.data());
+                this.testimonialsCache = reviews;
+            } catch (error) {
+                console.error("Error loading dynamic testimonials:", error);
                 this.renderStaticTestimonials();
+                return;
             }
-        } catch (error) {
-            console.error("Error loading dynamic testimonials:", error);
+        }
+
+        if (reviews && reviews.length > 2) { // Need at least 3 for a carousel to make sense
+            container.innerHTML = reviews.map(review => {
+                const author = review.userName || 'Anónimo';
+                const avatarId = author.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                const avatar = `https://i.pravatar.cc/150?u=${avatarId}`;
+                const quote = review.comment || 'Excelente produto! Recomendo vivamente.';
+
+                return `
+                <div class="snap-start shrink-0 w-full md:w-1/3 p-4">
+                    <div class="bg-primary p-8 rounded-lg text-center h-full flex flex-col justify-center">
+                        <p class="text-gray-300 italic mb-6">"${quote}"</p>
+                        <div class="flex items-center justify-center">
+                            <img src="${avatar}" alt="Avatar de ${author}" class="w-12 h-12 rounded-full mr-4" loading="lazy">
+                            <span class="font-bold text-white">${author}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
             this.renderStaticTestimonials();
         }
     },
@@ -953,39 +961,52 @@ const app = {
         const saleSection = document.getElementById('flash-sale-section');
         if (!saleSection) return;
 
-        try {
-            const saleDoc = await getDoc(doc(this.db, "flash_sale", "current"));
-            if (!saleDoc.exists()) {
+        let saleData = null;
+
+        if (this.flashSaleCache) {
+            if (!this.flashSaleCache.exists) {
                 saleSection.classList.add('hidden');
                 return;
             }
-
-            const saleData = saleDoc.data();
-            const endDate = saleData.endDate.toDate();
-            const now = new Date();
-
-            if (endDate <= now) {
+            saleData = this.flashSaleCache.data;
+        } else {
+            try {
+                const saleDoc = await getDoc(doc(this.db, "flash_sale", "current"));
+                if (!saleDoc.exists()) {
+                    this.flashSaleCache = { exists: false };
+                    saleSection.classList.add('hidden');
+                    return;
+                }
+                saleData = saleDoc.data();
+                this.flashSaleCache = { exists: true, data: saleData };
+            } catch (error) {
+                console.error("Error loading flash sale:", error);
                 saleSection.classList.add('hidden');
                 return;
             }
-
-            const product = this.products.find(p => p.id === saleData.productId);
-            if (!product) {
-                saleSection.classList.add('hidden');
-                return;
-            }
-
-            const discountedPrice = product.price * (1 - saleData.discountPercentage / 100);
-
-            const saleContainer = document.getElementById('flash-sale-container');
-            saleContainer.innerHTML = this.renderFlashSaleProduct(product, discountedPrice, saleData.discountPercentage);
-            saleSection.classList.remove('hidden');
-
-            startCountdown(endDate.getTime(), 'promo-countdown');
-        } catch (error) {
-            console.error("Error loading flash sale:", error);
-            saleSection.classList.add('hidden');
         }
+
+        const endDate = saleData.endDate.toDate();
+        const now = new Date();
+
+        if (endDate <= now) {
+            saleSection.classList.add('hidden');
+            return;
+        }
+
+        const product = this.products.find(p => p.id === saleData.productId);
+        if (!product) {
+            saleSection.classList.add('hidden');
+            return;
+        }
+
+        const discountedPrice = product.price * (1 - saleData.discountPercentage / 100);
+
+        const saleContainer = document.getElementById('flash-sale-container');
+        saleContainer.innerHTML = this.renderFlashSaleProduct(product, discountedPrice, saleData.discountPercentage);
+        saleSection.classList.remove('hidden');
+
+        startCountdown(endDate.getTime(), 'promo-countdown');
     },
 
     renderFlashSaleProduct(product, discountedPrice, discountPercentage) {
