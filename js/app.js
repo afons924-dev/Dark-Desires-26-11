@@ -545,7 +545,8 @@ const app = {
         // MAINTENANCE MODE: Force Coming Soon page if not logged in or not Admin
         // Only allow access to admin users.
         const isAdmin = this.userProfile && this.userProfile.isAdmin;
-        if (!this.user || !isAdmin) {
+        const maintenanceMode = false;
+        if (maintenanceMode && !isAdmin) {
              const templateContent = await this.getTemplate('coming-soon');
              const root = document.getElementById('app-root');
              if (templateContent) {
