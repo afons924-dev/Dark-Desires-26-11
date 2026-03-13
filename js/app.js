@@ -1342,10 +1342,18 @@ const app = {
     },
 
     renderRelatedProductsByCategory(currentProduct) {
-        if (!currentProduct || !currentProduct.category) return '';
+        if (!currentProduct || (!currentProduct.category && (!currentProduct.categories || currentProduct.categories.length === 0))) return '';
+
+        const categoriesToMatch = currentProduct.categories && currentProduct.categories.length > 0
+            ? currentProduct.categories
+            : [currentProduct.category];
 
         const relatedProducts = this.products
-            .filter(p => p.category === currentProduct.category && p.id !== currentProduct.id)
+            .filter(p => {
+                if (p.id === currentProduct.id) return false;
+                const pCats = p.categories && p.categories.length > 0 ? p.categories : [p.category];
+                return categoriesToMatch.some(cat => pCats.includes(cat));
+            })
             .sort(() => 0.5 - Math.random())
             .slice(0, 4);
 
@@ -2159,6 +2167,11 @@ const app = {
         const tagsValue = getValue('tags');
         const tagsArray = tagsValue ? tagsValue.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
+        // Extração de categorias
+        const categoryValue = getValue('category').toLowerCase();
+        const categoryArray = categoryValue ? categoryValue.split(';').map(cat => cat.trim()).filter(cat => cat) : [];
+        const mainCategory = categoryArray.length > 0 ? categoryArray[0] : ''; // Fallback string
+
         // Capture Variant Stock
         const variantsStock = {};
         const variantCheckboxes = document.querySelectorAll('.variant-stock-checkbox');
@@ -2170,7 +2183,8 @@ const app = {
             name: getValue('name'),
             description: getValue('description'),
             price: getNumber('price'),
-            category: getValue('category').toLowerCase(),
+            category: mainCategory, // Mantemos main category em minúsculas como base string para compatibilidade fallback
+            categories: categoryArray, // Array de categorias reais
             subcategory: getValue('subcategory'),
             stock: getInt('stock'),
             brand: getValue('brand'),
@@ -2222,7 +2236,7 @@ const app = {
         form.name.value = product.name || '';
         form.description.value = product.description || '';
         form.price.value = product.price || 0;
-        form.category.value = product.category || '';
+        form.category.value = (product.categories && product.categories.length > 0) ? product.categories.join('; ') : (product.category || '');
         if (form.subcategory) form.subcategory.value = product.subcategory || '';
         form.stock.value = product.stock || 0;
         form.brand.value = product.brand || '';
@@ -2990,10 +3004,16 @@ const app = {
                 return;
             }
 
-            const filteredProducts = this.products.filter(p =>
-                p.name.toLowerCase().includes(searchTerm) ||
-                p.description.toLowerCase().includes(searchTerm)
-            );
+        const filteredProducts = this.products.filter(p => {
+            const matchNameDesc = p.name.toLowerCase().includes(searchTerm) || p.description.toLowerCase().includes(searchTerm);
+            let matchCat = false;
+            if (p.categories && Array.isArray(p.categories)) {
+                matchCat = p.categories.some(cat => cat.toLowerCase().includes(searchTerm));
+            } else if (p.category) {
+                matchCat = p.category.toLowerCase().includes(searchTerm);
+            }
+            return matchNameDesc || matchCat;
+        });
             this.renderSearchSuggestions(filteredProducts, searchTerm);
 
             this.trackEvent('search', { search_term: searchTerm });
@@ -3724,10 +3744,22 @@ const app = {
 
         // --- Category Filter ---
         this.filters.category = params.get('category') || 'all';
-        const categories = ['all', ...new Set(this.products.map(p => p.category).filter(Boolean))];
+        const allCategories = new Set();
+        this.products.forEach(p => {
+            if (p.categories && Array.isArray(p.categories)) {
+                p.categories.forEach(cat => allCategories.add(cat));
+            } else if (p.category) {
+                allCategories.add(p.category);
+            }
+        });
+        const categories = ['all', ...Array.from(allCategories).filter(Boolean)];
         const categoryList = document.getElementById('category-filter-list');
         if (categoryList) {
-            categoryList.innerHTML = categories.map(cat => `<li><a href="javascript:void(0)" class="category-filter-btn block hover:text-accent transition-colors ${cat === this.filters.category ? 'text-accent font-bold' : ''}" data-category="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')}</a></li>`).join('');
+            categoryList.innerHTML = categories.map(cat => {
+                const isActive = cat === this.filters.category;
+                const activeClass = isActive ? 'text-accent font-bold border-l-4 border-accent pl-2 bg-secondary/50' : 'text-gray-300 border-l-4 border-transparent pl-2';
+                return `<li><a href="javascript:void(0)" class="category-filter-btn block py-1.5 rounded-r-md hover:bg-secondary hover:text-accent transition-all duration-200 group ${activeClass}" data-category="${cat}"><span class="inline-block transition-transform duration-200 group-hover:translate-x-1">${cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')}</span></a></li>`;
+            }).join('');
         }
 
         // --- Advanced Checkbox Filters ---
@@ -3757,9 +3789,9 @@ const app = {
             container.innerHTML = options.map(option => {
                 const isChecked = selectedValues.includes(option);
                 return `
-                <label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:text-accent">
+                <label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:bg-secondary p-1.5 rounded-md transition-colors group">
                     <input type="checkbox" value="${option}" data-filter-type="${filterType}" class="advanced-filter-checkbox h-4 w-4 rounded border-gray-600 bg-gray-700 text-accent focus:ring-accent" ${isChecked ? 'checked' : ''}>
-                    <span>${option}</span>
+                    <span class="group-hover:text-accent transition-colors">${option}</span>
                 </label>
             `}).join('');
         };
@@ -3867,7 +3899,12 @@ const app = {
 
         // Filter by category
         if (this.filters.category && this.filters.category !== 'all') {
-            filtered = filtered.filter(p => p.category === this.filters.category);
+            filtered = filtered.filter(p => {
+                if (p.categories && Array.isArray(p.categories)) {
+                    return p.categories.includes(this.filters.category);
+                }
+                return p.category === this.filters.category;
+            });
         }
 
         // Advanced Filters
@@ -4254,12 +4291,17 @@ const app = {
             return;
         }
 
-        const initialResults = this.products.filter(p =>
-            p.name.toLowerCase().includes(searchTerm) ||
-            p.description.toLowerCase().includes(searchTerm) ||
-            p.category.toLowerCase().includes(searchTerm) ||
-            (p.brand && p.brand.toLowerCase().includes(searchTerm))
-        );
+        const initialResults = this.products.filter(p => {
+            const matchNameDesc = p.name.toLowerCase().includes(searchTerm) || p.description.toLowerCase().includes(searchTerm);
+            const matchBrand = p.brand && p.brand.toLowerCase().includes(searchTerm);
+            let matchCat = false;
+            if (p.categories && Array.isArray(p.categories)) {
+                matchCat = p.categories.some(cat => cat.toLowerCase().includes(searchTerm));
+            } else if (p.category) {
+                matchCat = p.category.toLowerCase().includes(searchTerm);
+            }
+            return matchNameDesc || matchBrand || matchCat;
+        });
 
         this.currentSearchResults = initialResults; // Store initial results
         this.renderSearchFilters(initialResults);
@@ -4278,8 +4320,14 @@ const app = {
             const brand = p.brand || 'Outras';
             brandCounts[brand] = (brandCounts[brand] || 0) + 1;
 
-            const category = p.category || 'Outros';
-            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+            if (p.categories && Array.isArray(p.categories) && p.categories.length > 0) {
+                p.categories.forEach(cat => {
+                    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+                });
+            } else {
+                const category = p.category || 'Outros';
+                categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+            }
         });
 
         let filtersHtml = '';
@@ -4333,7 +4381,12 @@ const app = {
             filteredResults = filteredResults.filter(p => activeFilters.brand.includes(p.brand));
         }
         if (activeFilters.category.length > 0) {
-            filteredResults = filteredResults.filter(p => activeFilters.category.includes(p.category));
+            filteredResults = filteredResults.filter(p => {
+                if (p.categories && Array.isArray(p.categories)) {
+                    return p.categories.some(cat => activeFilters.category.includes(cat));
+                }
+                return activeFilters.category.includes(p.category);
+            });
         }
 
         gridEl.innerHTML = filteredResults.length > 0
