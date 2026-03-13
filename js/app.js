@@ -81,7 +81,7 @@ const app = {
     adminImageFiles: [], // Stores new File objects for upload
     adminExistingImages: [], // Stores existing image URLs for the product being edited
     translations: {},
-    filters: { category: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] },
+    filters: { category: 'all', subcategory: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] },
     filteredProducts: [],
     currentPage: 1,
     productsPerPage: 16,
@@ -430,6 +430,7 @@ const app = {
             else if (closest('a[href^="#/"]') && !closest('.search-suggestion-item') && !e.target.closest('a').target) { e.preventDefault(); this.navigateTo(new URL(e.target.closest('a').href).hash.substring(1)); }
             else if (closest('#login-btn')) this.openAuthModal('login');
             else if (closest('.category-filter-btn')) { e.preventDefault(); this.handleCategoryFilterClick(closest('.category-filter-btn')); }
+            else if (closest('.subcategory-filter-btn')) { e.preventDefault(); this.handleSubcategoryFilterClick(closest('.subcategory-filter-btn')); }
             else if (closest('.accordion-header')) this.toggleAccordion(closest('.accordion-header'));
             else if (closest('.admin-order-details-btn')) this.openAdminOrderDetailModal(closest('.admin-order-details-btn').dataset.id);
             else if (closest('#close-admin-order-modal-btn')) this.closeAdminOrderDetailModal();
@@ -495,9 +496,24 @@ const app = {
     },
 
     handleCategoryFilterClick(btn) {
-        document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('text-accent', 'font-bold'));
-        btn.classList.add('text-accent', 'font-bold');
+        document.querySelectorAll('.category-filter-btn').forEach(b => {
+            b.classList.remove('text-accent', 'font-bold', 'border-l-4', 'border-accent', 'pl-2', 'bg-secondary/50');
+            b.classList.add('text-gray-300', 'border-l-4', 'border-transparent', 'pl-2');
+        });
+        btn.classList.remove('text-gray-300', 'border-l-4', 'border-transparent', 'pl-2');
+        btn.classList.add('text-accent', 'font-bold', 'border-l-4', 'border-accent', 'pl-2', 'bg-secondary/50');
         this.filters.category = btn.dataset.category;
+        this.applyFilters();
+    },
+
+    handleSubcategoryFilterClick(btn) {
+        document.querySelectorAll('.subcategory-filter-btn').forEach(b => {
+            b.classList.remove('text-accent', 'font-bold', 'border-l-4', 'border-accent', 'pl-2', 'bg-secondary/50');
+            b.classList.add('text-gray-300', 'border-l-4', 'border-transparent', 'pl-2');
+        });
+        btn.classList.remove('text-gray-300', 'border-l-4', 'border-transparent', 'pl-2');
+        btn.classList.add('text-accent', 'font-bold', 'border-l-4', 'border-accent', 'pl-2', 'bg-secondary/50');
+        this.filters.subcategory = btn.dataset.subcategory;
         this.applyFilters();
     },
 
@@ -3740,7 +3756,7 @@ const app = {
         if (this.products.length === 0) return;
 
         // Reset filters before applying from URL
-        this.filters = { category: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] };
+        this.filters = { category: 'all', subcategory: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] };
 
         // --- Category Filter ---
         this.filters.category = params.get('category') || 'all';
@@ -3759,6 +3775,24 @@ const app = {
                 const isActive = cat === this.filters.category;
                 const activeClass = isActive ? 'text-accent font-bold border-l-4 border-accent pl-2 bg-secondary/50' : 'text-gray-300 border-l-4 border-transparent pl-2';
                 return `<li><a href="javascript:void(0)" class="category-filter-btn block py-1.5 rounded-r-md hover:bg-secondary hover:text-accent transition-all duration-200 group ${activeClass}" data-category="${cat}"><span class="inline-block transition-transform duration-200 group-hover:translate-x-1">${cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')}</span></a></li>`;
+            }).join('');
+        }
+
+        // --- Subcategory Filter ---
+        this.filters.subcategory = params.get('subcategory') || 'all';
+        const allSubcategories = new Set();
+        this.products.forEach(p => {
+            if (p.subcategory) {
+                allSubcategories.add(p.subcategory);
+            }
+        });
+        const subcategories = ['all', ...Array.from(allSubcategories).filter(Boolean)];
+        const subcategoryList = document.getElementById('subcategory-filter-list');
+        if (subcategoryList) {
+            subcategoryList.innerHTML = subcategories.map(cat => {
+                const isActive = cat === this.filters.subcategory;
+                const activeClass = isActive ? 'text-accent font-bold border-l-4 border-accent pl-2 bg-secondary/50' : 'text-gray-300 border-l-4 border-transparent pl-2';
+                return `<li><a href="javascript:void(0)" class="subcategory-filter-btn block py-1.5 rounded-r-md hover:bg-secondary hover:text-accent transition-all duration-200 group ${activeClass}" data-subcategory="${cat}"><span class="inline-block transition-transform duration-200 group-hover:translate-x-1">${cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')}</span></a></li>`;
             }).join('');
         }
 
@@ -3907,6 +3941,11 @@ const app = {
             });
         }
 
+        // Filter by subcategory
+        if (this.filters.subcategory && this.filters.subcategory !== 'all') {
+            filtered = filtered.filter(p => p.subcategory === this.filters.subcategory);
+        }
+
         // Advanced Filters
         ['brand', 'color', 'material'].forEach(filterType => {
             if (this.filters[filterType] && this.filters[filterType].length > 0) {
@@ -3946,6 +3985,7 @@ const app = {
     updateProductURL() {
         const params = new URLSearchParams();
         if (this.filters.category && this.filters.category !== 'all') params.set('category', this.filters.category);
+        if (this.filters.subcategory && this.filters.subcategory !== 'all') params.set('subcategory', this.filters.subcategory);
         ['brand', 'color', 'material'].forEach(filterType => {
             if (this.filters[filterType] && this.filters[filterType].length > 0) params.set(filterType, this.filters[filterType].join(','));
         });
