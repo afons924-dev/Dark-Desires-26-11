@@ -3788,42 +3788,46 @@ const app = {
         };
 
         renderCheckboxFilter('brand', 'brand-filter-list');
-        renderCheckboxFilter('color', 'color-filter-list');
-        // renderCheckboxFilter('material', 'material-filter-list');
 
-        // Material Filter as Dropdown (Sentinel Update)
-        const renderMaterialSelect = () => {
-            const container = document.getElementById('material-filter-list');
+        // Render Dropdown Filters (e.g., Color, Material)
+        const renderDropdownFilter = (filterType, containerId, idPrefix) => {
+            const container = document.getElementById(containerId);
             if (!container) return;
+
+            // Blacklist of terms to exclude from filters (case-insensitive)
+            const FILTER_BLACKLIST = ['balrog', 'default', 'padrao', 'padrão'];
+
             const options = [...new Set(this.products.flatMap(p => {
-                const val = p.material;
+                const val = p[filterType];
                 if (!val || val === 'N/A') return [];
                 if (Array.isArray(val)) return val;
                 return val.split(/[+,]/).map(s => s.trim()).filter(s => s);
-            }))].sort();
+            }))].filter(opt => !FILTER_BLACKLIST.includes(opt.toLowerCase())).sort();
 
-            const currentVal = params.get('material') || '';
-            this.filters.material = currentVal ? [currentVal] : [];
+            const currentVal = params.get(filterType) || '';
+            this.filters[filterType] = currentVal ? [currentVal] : [];
 
             if (options.length === 0) {
                 container.innerHTML = '<p class="text-sm text-gray-500">N/A</p>';
                 return;
             }
 
-            let html = `<select id="material-select" class="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 focus:ring-accent"><option value="">Todos</option>`;
+            let html = `<select id="${idPrefix}-select" class="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 focus:ring-accent"><option value="">Todos</option>`;
             options.forEach(opt => {
                 html += `<option value="${opt}" ${currentVal === opt ? 'selected' : ''}>${opt}</option>`;
             });
             html += `</select>`;
             container.innerHTML = html;
 
-            document.getElementById('material-select').addEventListener('change', (e) => {
+            document.getElementById(`${idPrefix}-select`).addEventListener('change', (e) => {
                 const val = e.target.value;
-                this.filters.material = val ? [val] : [];
+                this.filters[filterType] = val ? [val] : [];
                 this.applyFilters();
             });
         };
-        renderMaterialSelect();
+
+        renderDropdownFilter('color', 'color-filter-list', 'color');
+        renderDropdownFilter('material', 'material-filter-list', 'material');
 
         // --- Price Slider ---
         const prices = this.products.map(p => p.price);
