@@ -365,9 +365,7 @@ const app = {
         });
     },
 
-    addEventListeners() {
-        if (this.eventsInitialized) return;
-
+    setupAuthListeners() {
         on('auth:logout_success', () => {
             this.showToast('Sessão terminada com sucesso!');
             this.navigateTo('/');
@@ -375,115 +373,120 @@ const app = {
         on('error:auth', (error) => {
             this.showToast(error.message, 'error');
         });
+    },
+
+    setupCartListeners(closest, e) {
+        if (closest('.add-to-cart-btn')) {
+            e.preventDefault();
+            const button = closest('.add-to-cart-btn');
+            const productId = button.dataset.id;
+            const price = button.dataset.price || null;
+
+            const options = {};
+            const detailContent = document.getElementById('product-detail-content');
+
+            if (detailContent && detailContent.contains(button)) {
+                const colorInput = document.querySelector('input[name="selected_color"]:checked');
+                const sizeInput = document.querySelector('input[name="selected_size"]:checked');
+                if (colorInput) options.color = colorInput.value;
+                if (sizeInput) options.size = sizeInput.value;
+            } else {
+                const product = this.products.find(p => p.id === productId);
+                if (product && ((product.colors && product.colors.length > 0) || (product.sizes && product.sizes.length > 0))) {
+                    this.openProductOptionsModal(productId);
+                    return true;
+                }
+            }
+            this.addToCart(productId, price, options);
+            return true;
+        }
+        if (closest('.quantity-change')) { this.updateCartQuantity(closest('[data-id]').dataset.id, closest('.quantity-change').dataset.action); return true; }
+        if (closest('.remove-item')) { this.removeFromCart(closest('[data-id]').dataset.id); return true; }
+        if (closest('#apply-discount-btn')) { e.preventDefault(); this.applyDiscount(); return true; }
+        if (closest('#apply-loyalty-points-btn')) { e.preventDefault(); this.applyLoyaltyPoints(); return true; }
+        if (closest('#sidebar-apply-discount-btn')) { e.preventDefault(); this.applyDiscountSidebar(); return true; }
+        if (closest('.add-bundle-to-cart-btn')) {
+            e.preventDefault();
+            this.addBundleToCart(closest('.add-bundle-to-cart-btn').dataset.productId);
+            return true;
+        }
+        if (closest('#bottom-nav-cart')) { e.preventDefault(); this.openCartSidebar(); return true; }
+        return false;
+    },
+
+    setupSearchListeners(closest) {
+        if (closest('#search-icon')) { this.openSearch(); return true; }
+        if (closest('#close-search-btn')) { this.closeSearch(); return true; }
+        if (closest('.search-suggestion-item')) {
+            if (closest('a').href.includes('/products?category=')) {
+                this.closeSearch();
+            } else {
+                setTimeout(() => this.closeSearch(), 50);
+            }
+            return true;
+        }
+        if (closest('#search-suggestions a.block')) {
+            this.closeSearch();
+            return true;
+        }
+        return false;
+    },
+
+    setupInteractionListeners(closest, e) {
+        if (closest('.quick-view-btn')) { this.openPreviewModal(closest('.quick-view-btn').dataset.id); return true; }
+        if (closest('a[href^="#/"]') && !closest('.search-suggestion-item') && !e.target.closest('a').target) { e.preventDefault(); this.navigateTo(new URL(e.target.closest('a').href).hash.substring(1)); return true; }
+        if (closest('#login-btn')) { this.openAuthModal('login'); return true; }
+        if (closest('.category-filter-btn')) { e.preventDefault(); this.handleCategoryFilterClick(closest('.category-filter-btn')); return true; }
+        if (closest('.accordion-header')) { this.toggleAccordion(closest('.accordion-header')); return true; }
+        if (closest('.admin-order-details-btn')) { this.openAdminOrderDetailModal(closest('.admin-order-details-btn').dataset.id); return true; }
+        if (closest('#close-admin-order-modal-btn')) { this.closeAdminOrderDetailModal(); return true; }
+        if (closest('#submit-review-btn')) { e.preventDefault(); this.submitProductRating(closest('#submit-review-btn').dataset.productId); return true; }
+        if (closest('.order-item-image')) { e.preventDefault(); this.showImageInModal(e.target.dataset.imageUrl); return true; }
+        if (closest('.wishlist-btn')) { e.preventDefault(); this.toggleWishlist(closest('.wishlist-btn').dataset.id); return true; }
+        if (closest('.flash-sale-btn')) { this.openFlashSaleModal(closest('.flash-sale-btn').dataset.id); return true; }
+        if (closest('.notify-me-btn')) { e.preventDefault(); this.openNotifyMeModal(closest('.notify-me-btn').dataset.id); return true; }
+        return false;
+    },
+
+    addEventListeners() {
+        if (this.eventsInitialized) return;
+
+        this.setupAuthListeners();
 
         document.body.addEventListener('click', (e) => {
             const target = e.target;
             const closest = (selector) => target.closest(selector);
 
-            if (closest('.add-to-cart-btn')) {
-                e.preventDefault();
-                const button = closest('.add-to-cart-btn');
-                const productId = button.dataset.id;
-                const price = button.dataset.price || null;
-
-                // Extract options if on detail page
-                const options = {};
-                const detailContent = document.getElementById('product-detail-content');
-
-                // Only use these inputs if we are actually viewing the product we are adding
-                if (detailContent && detailContent.contains(button)) {
-                    const colorInput = document.querySelector('input[name="selected_color"]:checked');
-                    const sizeInput = document.querySelector('input[name="selected_size"]:checked');
-                    if (colorInput) options.color = colorInput.value;
-                    if (sizeInput) options.size = sizeInput.value;
-                } else {
-                    // If not on detail page, check if product has options
-                    const product = this.products.find(p => p.id === productId);
-                    if (product && ((product.colors && product.colors.length > 0) || (product.sizes && product.sizes.length > 0))) {
-                        this.openProductOptionsModal(productId);
-                        return;
-                    }
-                }
-
-                this.addToCart(productId, price, options);
-            }
-            else if (closest('.quick-view-btn')) this.openPreviewModal(closest('.quick-view-btn').dataset.id);
-            else if (closest('.quantity-change')) this.updateCartQuantity(closest('[data-id]').dataset.id, closest('.quantity-change').dataset.action);
-            else if (closest('.remove-item')) this.removeFromCart(closest('[data-id]').dataset.id);
-            // Delegated search listeners must come before the generic link handler
-            else if (closest('#search-icon')) { this.openSearch(); }
-            else if (closest('#close-search-btn')) { this.closeSearch(); }
-            else if (closest('.search-suggestion-item')) {
-                // This handles both product items and category links.
-                // For categories, we close immediately. For products, we add a small delay.
-                if (closest('a').href.includes('/products?category=')) {
-                    this.closeSearch();
-                } else {
-                    setTimeout(() => this.closeSearch(), 50);
-                }
-            }
-             else if (closest('#search-suggestions a.block')) {
-                // This specifically targets the "See all results" link.
-                // We can close it immediately, navigation will still occur.
-                this.closeSearch();
-            }
-            else if (closest('a[href^="#/"]') && !closest('.search-suggestion-item') && !e.target.closest('a').target) { e.preventDefault(); this.navigateTo(new URL(e.target.closest('a').href).hash.substring(1)); }
-            else if (closest('#login-btn')) this.openAuthModal('login');
-            else if (closest('.category-filter-btn')) { e.preventDefault(); this.handleCategoryFilterClick(closest('.category-filter-btn')); }
-            else if (closest('.accordion-header')) this.toggleAccordion(closest('.accordion-header'));
-            else if (closest('.admin-order-details-btn')) this.openAdminOrderDetailModal(closest('.admin-order-details-btn').dataset.id);
-            else if (closest('#close-admin-order-modal-btn')) this.closeAdminOrderDetailModal();
-            else if (closest('#submit-review-btn')) { e.preventDefault(); this.submitProductRating(closest('#submit-review-btn').dataset.productId); }
-            else if (closest('.order-item-image')) { e.preventDefault(); this.showImageInModal(e.target.dataset.imageUrl); }
-            else if (closest('#apply-discount-btn')) { e.preventDefault(); this.applyDiscount(); }
-            else if (closest('#apply-loyalty-points-btn')) { e.preventDefault(); this.applyLoyaltyPoints(); }
-            else if (closest('#sidebar-apply-discount-btn')) { e.preventDefault(); this.applyDiscountSidebar(); }
-            else if (closest('.wishlist-btn')) { e.preventDefault(); this.toggleWishlist(closest('.wishlist-btn').dataset.id); }
-            else if (closest('.flash-sale-btn')) { this.openFlashSaleModal(closest('.flash-sale-btn').dataset.id); }
-            else if (closest('.add-bundle-to-cart-btn')) {
-                e.preventDefault();
-                this.addBundleToCart(closest('.add-bundle-to-cart-btn').dataset.productId);
-            }
-            else if (closest('.notify-me-btn')) {
-                e.preventDefault();
-                this.openNotifyMeModal(closest('.notify-me-btn').dataset.id);
-            }
-             else if (closest('#bottom-nav-cart')) {
-                e.preventDefault();
-                this.openCartSidebar();
-            }
+            if (this.setupCartListeners(closest, e)) return;
+            if (this.setupSearchListeners(closest)) return;
+            if (this.setupInteractionListeners(closest, e)) return;
         });
 
-        // Use a separate listener for clicks that should close the search, to avoid conflicts.
         document.addEventListener('click', (e) => {
             const searchOverlay = document.getElementById('search-overlay');
-            // If the search is closed, do nothing.
-            if (!searchOverlay || searchOverlay.classList.contains('hidden')) {
-                return;
-            }
+            if (!searchOverlay || searchOverlay.classList.contains('hidden')) return;
 
             const searchContainer = searchOverlay.querySelector('.relative');
             const clickedInsideSearch = searchContainer && searchContainer.contains(e.target);
             const clickedOnSearchIcon = e.target.closest('#search-icon');
 
-            // If the click is outside the search area and not on the icon that opens it, close.
             if (!clickedInsideSearch && !clickedOnSearchIcon) {
                 this.closeSearch();
             }
         });
 
-    document.body.addEventListener('change', (e) => {
-        if (e.target.classList.contains('advanced-filter-checkbox')) {
-            const filterType = e.target.dataset.filterType;
-            const value = e.target.value;
-            if (e.target.checked) {
-                this.filters[filterType].push(value);
-            } else {
-                this.filters[filterType] = this.filters[filterType].filter(item => item !== value);
+        document.body.addEventListener('change', (e) => {
+            if (e.target.classList.contains('advanced-filter-checkbox')) {
+                const filterType = e.target.dataset.filterType;
+                const value = e.target.value;
+                if (e.target.checked) {
+                    this.filters[filterType].push(value);
+                } else {
+                    this.filters[filterType] = this.filters[filterType].filter(item => item !== value);
+                }
+                this.applyFilters();
             }
-            this.applyFilters();
-        }
-    });
+        });
 
         window.addEventListener('hashchange', () => this.renderPage());
         this.initSearch();
@@ -1014,26 +1017,148 @@ const app = {
         `;
     },
 
+    updateRecentlyViewed(productId) {
+        try {
+            const MAX_RECENTLY_VIEWED = 10;
+            let recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
+            recentlyViewed = recentlyViewed.filter(id => id !== productId);
+            recentlyViewed.unshift(productId);
+            if (recentlyViewed.length > MAX_RECENTLY_VIEWED) {
+                recentlyViewed.pop();
+            }
+            localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
+        } catch(e) {
+            console.error("Could not update recently viewed products", e);
+        }
+    },
+
+    async getProductReviewHtml(productId) {
+        if (!this.user) {
+            return `
+                <p class="text-gray-400">Faça login para deixar uma avaliação.</p>
+                <button class="btn btn-secondary mt-4" onclick="app.openAuthModal('login')">Login</button>`;
+        }
+        try {
+            const canReview = await this.checkIfUserCanReview(productId);
+            if (canReview) {
+                return `
+                    <form id="review-form" class="space-y-4">
+                        <div>
+                            <label for="review-score" class="block text-gray-300 mb-2">Sua Pontuação:</label>
+                            <select id="review-score" class="form-select w-full p-3 rounded-md bg-secondary border border-gray-600 text-white">
+                                <option value="5">5 Estrelas - Excelente</option>
+                                <option value="4">4 Estrelas - Muito Bom</option>
+                                <option value="3">3 Estrelas - Bom</option>
+                                <option value="2">2 Estrelas - Razoável</option>
+                                <option value="1">1 Estrela - Ruim</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="review-comment" class="block text-gray-300 mb-2">Seu Comentário (opcional):</label>
+                            <textarea id="review-comment" class="form-input w-full p-3 rounded-md" rows="4" placeholder="Escreva seu comentário aqui..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 mb-2" for="review-image">Adicionar Foto (opcional)</label>
+                            <input accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-black hover:file:bg-pink-400" id="review-image" type="file"/>
+                            <p class="text-xs text-gray-500 mt-1">Apenas fotos da embalagem ou do produto. Não inclua pessoas.</p>
+                        </div>
+                        <button type="submit" id="submit-review-btn" data-product-id="${productId}" class="btn btn-primary w-full">Enviar Avaliação</button>
+                    </form>`;
+            } else {
+                return `<p class="text-gray-400 bg-secondary p-4 rounded-lg">Só pode avaliar produtos que já comprou. Obrigado pela sua compreensão.</p>`;
+            }
+        } catch (error) {
+            console.error("Erro ao verificar a elegibilidade da avaliação. A renderizar a página sem a secção de avaliação.", error);
+            return `<p class="text-gray-400 bg-secondary p-4 rounded-lg">Não foi possível carregar a secção de avaliação.</p>`;
+        }
+    },
+
+    getProductGalleryHtml(product, imageList, mainImage, isOutOfStock) {
+        return `
+            <div class="relative" id="product-gallery">
+                <button class="wishlist-btn" data-id="${product.id}" aria-label="Adicionar ${product.name} à wishlist">
+                   <i class="fa-heart fa-regular"></i>
+                </button>
+                <div class="aspect-w-1 aspect-h-1 w-full bg-secondary rounded-lg flex items-center justify-center mb-4">
+                    <img id="main-product-image" src="${mainImage}" alt="${product.name}" class="w-full h-full max-h-[500px] object-contain rounded-lg ${isOutOfStock ? 'opacity-50' : ''}" onerror="this.onerror=null;this.src='https://placehold.co/800x800/1a1a1a/e11d48?text=Indisponível';this.alt='Imagem de produto indisponível.'" loading="lazy">
+                </div>
+                <div id="product-thumbnails" class="flex gap-2 justify-center overflow-x-auto p-2">
+                    ${imageList.map((img, index) => `
+                        <img src="${img}" alt="Thumbnail ${index + 1} for ${product.name}" class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-accent focus:border-accent transition-all duration-200" data-index="${index}">
+                    `).join('')}
+                </div>
+                ${isOutOfStock ? '<div class="absolute top-4 left-4 bg-red-600 text-white text-lg font-bold px-4 py-2 rounded-lg z-10">ESGOTADO</div>' : ''}
+            </div>`;
+    },
+
+    getProductOptionsHtml(product) {
+        let optionsHtml = '';
+        if (product.colors && product.colors.length > 0) {
+            optionsHtml += `
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">Cor:</label>
+                    <div class="flex flex-wrap gap-2" id="product-colors-container">
+                        ${product.colors.map((c) => {
+                            const isAvailable = product.variantsStock ? product.variantsStock[c] !== false : true;
+                            return `
+                            <label class="cursor-pointer relative group">
+                                <input type="radio" name="selected_color" value="${c}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
+                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
+                                    ${isAvailable
+                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
+                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50 relative overflow-hidden'}">
+                                    ${c}
+                                    ${!isAvailable ? '<span class="absolute inset-0 bg-transparent flex items-center justify-center text-red-500 transform -rotate-12 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">Esgotado</span>' : ''}
+                                </span>
+                            </label>
+                        `}).join('')}
+                    </div>
+                </div>`;
+        }
+        if (product.sizes && product.sizes.length > 0) {
+            optionsHtml += `
+                <div>
+                    <label class="block text-gray-300 mb-2 font-semibold">Tamanho:</label>
+                    <div class="flex flex-wrap gap-2" id="product-sizes-container">
+                        ${product.sizes.map((s) => {
+                            const isAvailable = product.variantsStock ? product.variantsStock[s] !== false : true;
+                            return `
+                            <label class="cursor-pointer relative group">
+                                <input type="radio" name="selected_size" value="${s}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
+                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
+                                    ${isAvailable
+                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
+                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50 relative overflow-hidden'}">
+                                    ${s}
+                                    ${!isAvailable ? '<span class="absolute inset-0 bg-transparent flex items-center justify-center text-red-500 transform -rotate-12 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">Esgotado</span>' : ''}
+                                </span>
+                            </label>
+                        `}).join('')}
+                    </div>
+                </div>`;
+        }
+        return optionsHtml;
+    },
+
+    getProductSpecsHtml(product) {
+        return `
+            <div class="my-6 bg-secondary p-4 rounded-lg">
+                <h3 class="text-xl font-bold text-white mb-3">Especificações</h3>
+                <ul class="space-y-2 text-gray-300 text-sm">
+                    ${product.brand ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Marca</span> <span class="font-semibold text-white">${product.brand}</span></li>` : ''}
+                    ${product.material ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Material</span> <span class="font-semibold text-white">${product.material}</span></li>` : ''}
+                    <li class="flex justify-between py-1"><span>Disponibilidade</span> <span class="font-semibold ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}">${product.stock > 0 ? `Em Stock (${product.stock} unidades)` : 'Esgotado'}</span></li>
+                </ul>
+            </div>`;
+    },
+
     async renderProductDetail(productId) {
         const product = this.products.find(p => p.id === productId);
         const container = document.getElementById('product-detail-content');
         if (!container) return;
 
         if (product) {
-            // Track recently viewed products
-            try {
-                const MAX_RECENTLY_VIEWED = 10;
-                let recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
-                recentlyViewed = recentlyViewed.filter(id => id !== productId); // Remove if already present
-                recentlyViewed.unshift(productId); // Add to the front
-                if (recentlyViewed.length > MAX_RECENTLY_VIEWED) {
-                    recentlyViewed.pop(); // Limit the list size
-                }
-                localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
-            } catch(e) {
-                console.error("Could not update recently viewed products", e);
-            }
-
+            this.updateRecentlyViewed(productId);
             this.updateMetaTagsForPage('/product-detail', new URLSearchParams(`id=${productId}`));
 
             const isOutOfStock = !product.stock || product.stock <= 0;
@@ -1051,46 +1176,10 @@ const app = {
                        <i class="fas fa-shopping-cart"></i> Adicionar ao Carrinho ${urgencyMessage}
                    </button>`;
 
-            let reviewSectionHtml = '';
-            if (this.user) {
-                try {
-                    const canReview = await this.checkIfUserCanReview(productId);
-                    if (canReview) {
-                        reviewSectionHtml = `
-                            <form id="review-form" class="space-y-4">
-                                <div>
-                                    <label for="review-score" class="block text-gray-300 mb-2">Sua Pontuação:</label>
-                                    <select id="review-score" class="form-select w-full p-3 rounded-md bg-secondary border border-gray-600 text-white">
-                                        <option value="5">5 Estrelas - Excelente</option>
-                                        <option value="4">4 Estrelas - Muito Bom</option>
-                                        <option value="3">3 Estrelas - Bom</option>
-                                        <option value="2">2 Estrelas - Razoável</option>
-                                        <option value="1">1 Estrela - Ruim</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="review-comment" class="block text-gray-300 mb-2">Seu Comentário (opcional):</label>
-                                    <textarea id="review-comment" class="form-input w-full p-3 rounded-md" rows="4" placeholder="Escreva seu comentário aqui..."></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-gray-300 mb-2" for="review-image">Adicionar Foto (opcional)</label>
-                                    <input accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-black hover:file:bg-pink-400" id="review-image" type="file"/>
-                                    <p class="text-xs text-gray-500 mt-1">Apenas fotos da embalagem ou do produto. Não inclua pessoas.</p>
-                                </div>
-                                <button type="submit" id="submit-review-btn" data-product-id="${product.id}" class="btn btn-primary w-full">Enviar Avaliação</button>
-                            </form>`;
-                    } else {
-                        reviewSectionHtml = `<p class="text-gray-400 bg-secondary p-4 rounded-lg">Só pode avaliar produtos que já comprou. Obrigado pela sua compreensão.</p>`;
-                    }
-                } catch (error) {
-                    console.error("Erro ao verificar a elegibilidade da avaliação. A renderizar a página sem a secção de avaliação.", error);
-                    reviewSectionHtml = `<p class="text-gray-400 bg-secondary p-4 rounded-lg">Não foi possível carregar a secção de avaliação.</p>`;
-                }
-            } else {
-                reviewSectionHtml = `
-                    <p class="text-gray-400">Faça login para deixar uma avaliação.</p>
-                    <button class="btn btn-secondary mt-4" onclick="app.openAuthModal('login')">Login</button>`;
-            }
+            const reviewSectionHtml = await this.getProductReviewHtml(productId);
+            const galleryHtml = this.getProductGalleryHtml(product, imageList, mainImage, isOutOfStock);
+            const optionsHtml = this.getProductOptionsHtml(product);
+            const specsHtml = this.getProductSpecsHtml(product);
 
             container.innerHTML = `
                 <div class="mb-8">
@@ -1099,20 +1188,7 @@ const app = {
                     </a>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    <div class="relative" id="product-gallery">
-                        <button class="wishlist-btn" data-id="${product.id}" aria-label="Adicionar ${product.name} à wishlist">
-                           <i class="fa-heart fa-regular"></i>
-                        </button>
-                        <div class="aspect-w-1 aspect-h-1 w-full bg-secondary rounded-lg flex items-center justify-center mb-4">
-                            <img id="main-product-image" src="${mainImage}" alt="${product.name}" class="w-full h-full max-h-[500px] object-contain rounded-lg ${isOutOfStock ? 'opacity-50' : ''}" onerror="this.onerror=null;this.src='https://placehold.co/800x800/1a1a1a/e11d48?text=Indisponível';this.alt='Imagem de produto indisponível.'" loading="lazy">
-                        </div>
-                        <div id="product-thumbnails" class="flex gap-2 justify-center overflow-x-auto p-2">
-                            ${imageList.map((img, index) => `
-                                <img src="${img}" alt="Thumbnail ${index + 1} for ${product.name}" class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-accent focus:border-accent transition-all duration-200" data-index="${index}">
-                            `).join('')}
-                        </div>
-                        ${isOutOfStock ? '<div class="absolute top-4 left-4 bg-red-600 text-white text-lg font-bold px-4 py-2 rounded-lg z-10">ESGOTADO</div>' : ''}
-                    </div>
+                    ${galleryHtml}
                     <div class="flex flex-col justify-center">
                         <h2 class="text-4xl font-extrabold text-white mb-3">${product.name}</h2>
                         <div class="flex items-center mb-4">
@@ -1122,59 +1198,10 @@ const app = {
                         <p class="text-gray-300 text-lg mb-6">${product.description}</p>
 
                         <div class="my-6 space-y-4">
-                            ${product.colors && product.colors.length > 0 ? `
-                                <div>
-                                    <label class="block text-gray-300 mb-2 font-semibold">Cor:</label>
-                                    <div class="flex flex-wrap gap-2" id="product-colors-container">
-                                        ${product.colors.map((c) => {
-                                            const isAvailable = product.variantsStock ? product.variantsStock[c] !== false : true;
-                                            return `
-                                            <label class="cursor-pointer relative group">
-                                                <input type="radio" name="selected_color" value="${c}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
-                                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
-                                                    ${isAvailable
-                                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
-                                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50 relative overflow-hidden'}">
-                                                    ${c}
-                                                    ${!isAvailable ? '<span class="absolute inset-0 bg-transparent flex items-center justify-center text-red-500 transform -rotate-12 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">Esgotado</span>' : ''}
-                                                </span>
-                                            </label>
-                                        `}).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
-
-                            ${product.sizes && product.sizes.length > 0 ? `
-                                <div>
-                                    <label class="block text-gray-300 mb-2 font-semibold">Tamanho:</label>
-                                    <div class="flex flex-wrap gap-2" id="product-sizes-container">
-                                        ${product.sizes.map((s) => {
-                                            const isAvailable = product.variantsStock ? product.variantsStock[s] !== false : true;
-                                            return `
-                                            <label class="cursor-pointer relative group">
-                                                <input type="radio" name="selected_size" value="${s}" class="sr-only peer" ${!isAvailable ? 'disabled' : ''}>
-                                                <span class="px-4 py-2 rounded-md border transition-all text-sm uppercase block
-                                                    ${isAvailable
-                                                        ? 'bg-gray-700 border-gray-600 peer-checked:bg-accent peer-checked:text-white peer-checked:border-accent hover:bg-gray-600'
-                                                        : 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed opacity-50 relative overflow-hidden'}">
-                                                    ${s}
-                                                    ${!isAvailable ? '<span class="absolute inset-0 bg-transparent flex items-center justify-center text-red-500 transform -rotate-12 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">Esgotado</span>' : ''}
-                                                </span>
-                                            </label>
-                                        `}).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
+                            ${optionsHtml}
                         </div>
 
-                        <div class="my-6 bg-secondary p-4 rounded-lg">
-                            <h3 class="text-xl font-bold text-white mb-3">Especificações</h3>
-                            <ul class="space-y-2 text-gray-300 text-sm">
-                                ${product.brand ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Marca</span> <span class="font-semibold text-white">${product.brand}</span></li>` : ''}
-                                ${product.material ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Material</span> <span class="font-semibold text-white">${product.material}</span></li>` : ''}
-                                <li class="flex justify-between py-1"><span>Disponibilidade</span> <span class="font-semibold ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}">${product.stock > 0 ? `Em Stock (${product.stock} unidades)` : 'Esgotado'}</span></li>
-                            </ul>
-                        </div>
+                        ${specsHtml}
 
                         <span class="text-4xl font-bold text-accent mb-6">€${product.price.toFixed(2)}</span>
                         ${addToCartButtonDetail}
@@ -4538,7 +4565,6 @@ const app = {
                 discount: this.discount, // Send discount info for server-side validation
                 userId: this.user ? this.user.uid : null // Send null if guest
             };
-            console.log("DEBUG: Calling 'createStripePaymentIntent' with payload:", JSON.stringify(payload, null, 2));
 
             const result = await createStripePaymentIntent(payload);
             const data = result.data;
