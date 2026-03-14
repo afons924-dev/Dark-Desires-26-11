@@ -1145,7 +1145,7 @@ const app = {
             <div class="my-6 bg-secondary p-4 rounded-lg">
                 <h3 class="text-xl font-bold text-white mb-3">Especificações</h3>
                 <ul class="space-y-2 text-gray-300 text-sm">
-                    ${product.brand ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Marca</span> <span class="font-semibold text-white">${product.brand}</span></li>` : ''}
+                    ${product.subcategory ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Sub-categoria</span> <span class="font-semibold text-white">${product.subcategory}</span></li>` : ''}
                     ${product.material ? `<li class="flex justify-between py-1 border-b border-gray-700"><span>Material</span> <span class="font-semibold text-white">${product.material}</span></li>` : ''}
                     <li class="flex justify-between py-1"><span>Disponibilidade</span> <span class="font-semibold ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}">${product.stock > 0 ? `Em Stock (${product.stock} unidades)` : 'Esgotado'}</span></li>
                 </ul>
