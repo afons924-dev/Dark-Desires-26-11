@@ -1,9 +1,9 @@
 <!-- Hero Carousel -->
-<section id="hero-carousel-section" class="relative h-[80vh] min-h-[500px] w-full overflow-hidden bg-primary">
+<section id="hero-carousel-section" class="relative h-[65vh] min-h-[400px] max-h-[80vh] overflow-hidden bg-black">
     <div id="hero-carousel" class="relative w-full h-full">
         <!-- Slide 1: 5% Discount -->
         <div class="hero-slide absolute w-full h-full transition-opacity duration-1000 ease-in-out opacity-0" data-slide-index="0">
-            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/5Perc.png?alt=media" alt="5% Off" class="absolute inset-0 w-full h-full object-cover object-center">
+            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/5Perc.png?alt=media" alt="5% Off" class="absolute inset-0 w-full h-full object-cover object-center opacity-70">
             <div class="absolute inset-0 flex items-end justify-center pb-16 md:pb-24 z-20 pointer-events-none">
                 <div class="max-w-xl text-center pointer-events-auto">
                     <a class="btn btn-primary text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products" data-i18n="slide2Button">Ver Produtos</a>
@@ -13,7 +13,7 @@
 
         <!-- Slide 2: Luxury -->
         <div class="hero-slide absolute w-full h-full transition-opacity duration-1000 ease-in-out opacity-0" data-slide-index="1">
-            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Luxo.png?alt=media" alt="Coleção de Luxo" class="absolute inset-0 w-full h-full object-cover object-center">
+            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Luxo.png?alt=media" alt="Coleção de Luxo" class="absolute inset-0 w-full h-full object-cover object-center opacity-70">
             <div class="absolute inset-0 flex items-end justify-center pb-16 md:pb-24 z-20 pointer-events-none">
                 <div class="max-w-xl text-center pointer-events-auto">
                     <a class="btn btn-primary text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products?category=premium" data-i18n="slide1Button">Descobrir</a>
@@ -23,10 +23,10 @@
 
         <!-- Slide 3: New Arrivals -->
         <div class="hero-slide absolute w-full h-full transition-opacity duration-1000 ease-in-out opacity-0" data-slide-index="2">
-            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Novidade_na_area.png?alt=media" alt="Novidades" class="absolute inset-0 w-full h-full object-cover object-center">
+            <img src="https://firebasestorage.googleapis.com/v0/b/desire-loja-final.firebasestorage.app/o/Novidade_na_area.png?alt=media" alt="Novidades" class="absolute inset-0 w-full h-full object-cover object-center opacity-70">
             <div class="absolute inset-0 flex items-end justify-center pb-16 md:pb-24 z-20 pointer-events-none">
                 <div class="max-w-xl text-center pointer-events-auto">
-                    <a class="btn btn-primary text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products?subcategory=Para Casal" data-i18n="slide3Button">Ver Produtos</a>
+                    <a class="btn btn-primary text-lg px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform" href="#/products?category=para-casal" data-i18n="slide3Button">Ver Produtos</a>
                 </div>
             </div>
         </div>
@@ -76,19 +76,19 @@
 <section class="py-16 sm:py-24 bg-background">
     <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <a class="block bg-primary rounded-lg p-8 text-center flex flex-col items-center category-card" href="#/products?subcategory=Para Ela">
+            <a class="block bg-primary rounded-lg p-8 text-center flex flex-col items-center category-card" href="#/products?category=para-ela">
                 <i aria-hidden="true" class="fas fa-venus text-accent text-5xl mb-4"></i>
                 <h3 class="text-3xl font-bold mb-2" data-i18n="categoryForHer">Para Ela</h3>
                 <p class="text-gray-400 mb-6 flex-grow" data-i18n="categoryForHerDesc">Produtos selecionados para o prazer feminino.</p>
                 <span class="text-accent font-semibold mt-auto" data-i18n-html="seeMore">Ver Mais <i aria-hidden="true" class="fas fa-arrow-right ml-2"></i></span>
             </a>
-            <a class="block bg-primary rounded-lg p-8 text-center flex flex-col items-center category-card" href="#/products?subcategory=Para Ele">
+            <a class="block bg-primary rounded-lg p-8 text-center flex flex-col items-center category-card" href="#/products?category=para-ele">
                 <i aria-hidden="true" class="fas fa-mars text-accent text-5xl mb-4"></i>
                 <h3 class="text-3xl font-bold mb-2" data-i18n="categoryForHim">Para Ele</h3>
                 <p class="text-gray-400 mb-6 flex-grow" data-i18n="categoryForHimDesc">Produtos selecionados para o prazer masculino.</p>
                 <span class="text-accent font-semibold mt-auto" data-i18n-html="seeMore">Ver Mais <i aria-hidden="true" class="fas fa-arrow-right ml-2"></i></span>
             </a>
-            <a class="block bg-primary rounded-lg p-8 text-center flex flex-col items-center category-card" href="#/products?subcategory=Para Casal">
+            <a class="block bg-primary rounded-lg p-8 text-center flex flex-col items-center category-card" href="#/products?category=para-casal">
                 <i aria-hidden="true" class="fas fa-venus-mars text-accent text-5xl mb-4"></i>
                 <h3 class="text-3xl font-bold mb-2" data-i18n="categoryForCouple">Para Casal</h3>
                 <p class="text-gray-400 mb-6 flex-grow" data-i18n="categoryForCoupleDesc">Produtos para momentos íntimos a dois.</p>
