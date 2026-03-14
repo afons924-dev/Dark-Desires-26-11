@@ -81,7 +81,7 @@ const app = {
     adminImageFiles: [], // Stores new File objects for upload
     adminExistingImages: [], // Stores existing image URLs for the product being edited
     translations: {},
-    filters: { category: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] },
+    filters: { category: 'all', minPrice: 0, maxPrice: 0, subcategory: [], color: [], material: [] },
     filteredProducts: [],
     currentPage: 1,
     productsPerPage: 16,
@@ -3731,7 +3731,7 @@ const app = {
         if (this.products.length === 0) return;
 
         // Reset filters before applying from URL
-        this.filters = { category: 'all', minPrice: 0, maxPrice: 0, brand: [], color: [], material: [] };
+        this.filters = { category: 'all', minPrice: 0, maxPrice: 0, subcategory: [], color: [], material: [] };
 
         // --- Category Filter ---
         this.filters.category = params.get('category') || 'all';
@@ -3787,7 +3787,7 @@ const app = {
             `}).join('');
         };
 
-        renderCheckboxFilter('brand', 'brand-filter-list');
+        renderCheckboxFilter('subcategory', 'subcategory-filter-list');
 
         // Render Dropdown Filters (e.g., Color, Material)
         const renderDropdownFilter = (filterType, containerId, idPrefix) => {
@@ -3903,7 +3903,7 @@ const app = {
         }
 
         // Advanced Filters
-        ['brand', 'color', 'material'].forEach(filterType => {
+        ['subcategory', 'color', 'material'].forEach(filterType => {
             if (this.filters[filterType] && this.filters[filterType].length > 0) {
                 filtered = filtered.filter(p => {
                     const val = p[filterType];
@@ -3941,7 +3941,7 @@ const app = {
     updateProductURL() {
         const params = new URLSearchParams();
         if (this.filters.category && this.filters.category !== 'all') params.set('category', this.filters.category);
-        ['brand', 'color', 'material'].forEach(filterType => {
+        ['subcategory', 'color', 'material'].forEach(filterType => {
             if (this.filters[filterType] && this.filters[filterType].length > 0) params.set(filterType, this.filters[filterType].join(','));
         });
         const prices = this.products.map(p => p.price);
@@ -4288,14 +4288,14 @@ const app = {
 
         const initialResults = this.products.filter(p => {
             const matchNameDesc = p.name.toLowerCase().includes(searchTerm) || p.description.toLowerCase().includes(searchTerm);
-            const matchBrand = p.brand && p.brand.toLowerCase().includes(searchTerm);
+            const matchSubcategory = p.subcategory && p.subcategory.toLowerCase().includes(searchTerm);
             let matchCat = false;
             if (p.categories && Array.isArray(p.categories)) {
                 matchCat = p.categories.some(cat => cat.toLowerCase().includes(searchTerm));
             } else if (p.category) {
                 matchCat = p.category.toLowerCase().includes(searchTerm);
             }
-            return matchNameDesc || matchBrand || matchCat;
+            return matchNameDesc || matchSubcategory || matchCat;
         });
 
         this.currentSearchResults = initialResults; // Store initial results
@@ -4307,13 +4307,13 @@ const app = {
         const filtersContainer = document.getElementById('search-filters-container');
         if (!filtersContainer) return;
 
-        const brandCounts = {};
+        const subcategoryCounts = {};
         const categoryCounts = {};
 
         results.forEach(p => {
-            // Group null/undefined brands as 'Outros' or skip
-            const brand = p.brand || 'Outras';
-            brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+            // Group null/undefined subcategories as 'Outras' or skip
+            const subcategory = p.subcategory || 'Outras';
+            subcategoryCounts[subcategory] = (subcategoryCounts[subcategory] || 0) + 1;
 
             if (p.categories && Array.isArray(p.categories) && p.categories.length > 0) {
                 p.categories.forEach(cat => {
@@ -4339,15 +4339,15 @@ const app = {
             filtersHtml += `</div></div>`;
         }
 
-        // Always show Brand filters if any exist
-        if (Object.keys(brandCounts).length > 0) {
+        // Always show Sub-categoria filters if any exist
+        if (Object.keys(subcategoryCounts).length > 0) {
              // Add a separator if categories were added
             if(filtersHtml) filtersHtml += `<hr class="border-gray-700 my-4">`;
-            filtersHtml += `<div><h4 class="font-semibold mb-3">Marca</h4><div class="space-y-2">`;
-            for (const brand in brandCounts) {
+            filtersHtml += `<div><h4 class="font-semibold mb-3">Sub-categoria</h4><div class="space-y-2">`;
+            for (const subcategory in subcategoryCounts) {
                 filtersHtml += `<label class="flex items-center space-x-3 cursor-pointer text-gray-300 hover:text-accent">
-                    <input type="checkbox" value="${brand}" data-filter-type="brand" class="search-filter-checkbox h-4 w-4 rounded border-gray-600 bg-gray-700 text-accent focus:ring-accent">
-                    <span>${brand} <span class="text-xs text-gray-500">(${brandCounts[brand]})</span></span>
+                    <input type="checkbox" value="${subcategory}" data-filter-type="subcategory" class="search-filter-checkbox h-4 w-4 rounded border-gray-600 bg-gray-700 text-accent focus:ring-accent">
+                    <span>${subcategory} <span class="text-xs text-gray-500">(${subcategoryCounts[subcategory]})</span></span>
                 </label>`;
             }
             filtersHtml += `</div></div>`;
@@ -4365,15 +4365,15 @@ const app = {
         const countEl = document.getElementById('search-results-count');
         if (!gridEl || !countEl) return;
 
-        const activeFilters = { brand: [], category: [] };
+        const activeFilters = { subcategory: [], category: [] };
         document.querySelectorAll('.search-filter-checkbox:checked').forEach(checkbox => {
             activeFilters[checkbox.dataset.filterType].push(checkbox.value);
         });
 
         let filteredResults = [...this.currentSearchResults];
 
-        if (activeFilters.brand.length > 0) {
-            filteredResults = filteredResults.filter(p => activeFilters.brand.includes(p.brand));
+        if (activeFilters.subcategory.length > 0) {
+            filteredResults = filteredResults.filter(p => activeFilters.subcategory.includes(p.subcategory || 'Outras'));
         }
         if (activeFilters.category.length > 0) {
             filteredResults = filteredResults.filter(p => {
