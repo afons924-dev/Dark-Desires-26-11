@@ -552,7 +552,7 @@ const app = {
         // MAINTENANCE MODE: Force Coming Soon page if not logged in or not Admin
         // Only allow access to admin users.
         const isAdmin = this.userProfile && this.userProfile.isAdmin;
-        const maintenanceMode = false;
+        const maintenanceMode = true;
         if (maintenanceMode && !isAdmin) {
              const templateContent = await this.getTemplate('coming-soon');
              const root = document.getElementById('app-root');
@@ -2658,6 +2658,29 @@ const app = {
             } catch (error) { console.error("Contact form submission error:", error); this.showToast('Ocorreu um erro ao enviar a sua mensagem. Por favor, tente novamente.', 'error');
             } finally { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnText; }
         });
+    },
+
+    async handleNewsletterSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        if (!this.validateForm(form)) return;
+        const emailInput = form.querySelector('input[name="email"]');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
+        submitBtn.disabled = true; emailInput.disabled = true; submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+        try {
+            await this.getRecaptchaToken('newsletter');
+            await addDoc(collection(this.db, "newsletter_subscriptions"), { email: emailInput.value, subscribedAt: serverTimestamp() });
+            this.trackEvent('sign_up', { method: 'Newsletter' });
+            this.showToast('Obrigado por subscrever! Será notificado quando abrirmos.');
+            form.reset();
+        } catch(error) {
+            console.error("Newsletter form submission error:", error);
+            this.showToast('Ocorreu um erro na subscrição. Tente novamente.', 'error');
+        } finally {
+            submitBtn.disabled = false; emailInput.disabled = false; submitBtn.innerHTML = originalBtnText;
+        }
     },
 
     async initNewsletterForm() {
