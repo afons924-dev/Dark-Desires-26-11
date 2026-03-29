@@ -288,17 +288,29 @@ html[data-theme='light'] #shipping-message {
 
 /* Hero Image Smooth Fade */
 .hero-image-fade {
-    /* Create a radial gradient mask to fade out the edges */
-    -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 95%);
-    mask-image: radial-gradient(ellipse at center, black 40%, transparent 95%);
+    /* Create a radial gradient mask to completely fade out before the hard edges */
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
 }
 
-/* On very wide screens, we might need a linear mask as well to ensure the sides fade smoothly */
+/* Ensure edges fade aggressively on all larger screens to prevent cuts */
+@media (min-width: 768px) {
+    .hero-image-fade {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%),
+                            linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%),
+                    linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+        -webkit-mask-composite: source-in;
+        mask-composite: intersect;
+    }
+}
+
+/* Ensure edges fade even more aggressively on very wide screens */
 @media (min-width: 1024px) {
     .hero-image-fade {
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%),
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%),
                             linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-        mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%),
+        mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%),
                     linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
         -webkit-mask-composite: source-in;
         mask-composite: intersect;
