@@ -286,22 +286,3 @@ html[data-theme='light'] #shipping-message {
     display: none !important;
 }
 
-/* Hero Image Smooth Fade via CSS Mask */
-.hero-image-fade {
-    /* Create a radial gradient mask to fade all 4 edges smoothly into the black background */
-    /* Updated for smoother left/right edges per user request */
-    -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
-    mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-size: 100% 100%;
-    mask-size: 100% 100%;
-}
-
-@media (max-width: 767px) {
-    .hero-image-fade {
-        /* On mobile, adjust the fade to start a bit earlier for a softer transition if images are taller */
-        -webkit-mask-image: radial-gradient(ellipse at center, black 35%, transparent 85%);
-        mask-image: radial-gradient(ellipse at center, black 35%, transparent 85%);
-    }
-}
